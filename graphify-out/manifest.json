@@ -1,0 +1,110 @@
+{
+  "package.json": {
+    "mtime": 1792860254.6988192,
+    "seen": 1792870847.8125775,
+    "ast_hash": "d3bd6845e018dd21db7b6f8863ba8001",
+    "semantic_hash": "d3bd6845e018dd21db7b6f8863ba8001"
+  },
+  "public/holidays.json": {
+    "mtime": 1792860254.6998253,
+    "seen": 1792870847.8125775,
+    "ast_hash": "9616108d64fd7d4df256ec7f6c457628",
+    "semantic_hash": "9616108d64fd7d4df256ec7f6c457628"
+  },
+  "src/App.tsx": {
+    "mtime": 1792860254.7008257,
+    "seen": 1792870847.8125775,
+    "ast_hash": "884f4d257a1f7ba1f00b17ca48611c8f",
+    "semantic_hash": "884f4d257a1f7ba1f00b17ca48611c8f"
+  },
+  "src/api.ts": {
+    "mtime": 1792860254.701825,
+    "seen": 1792870847.8125775,
+    "ast_hash": "c2f99ca609d72650454f445814297fa0",
+    "semantic_hash": "c2f99ca609d72650454f445814297fa0"
+  },
+  "src/components/CalendarStrip.tsx": {
+    "mtime": 1792860254.7028234,
+    "seen": 1792870847.8125775,
+    "ast_hash": "77052b439f04ae33a4d1ed59fe9c5fe1",
+    "semantic_hash": "77052b439f04ae33a4d1ed59fe9c5fe1"
+  },
+  "src/components/DayCard.tsx": {
+    "mtime": 1792860254.7028234,
+    "seen": 1792870847.8125775,
+    "ast_hash": "09b4e57956eb2b055b02425e3f91e125",
+    "semantic_hash": "09b4e57956eb2b055b02425e3f91e125"
+  },
+  "src/components/MarkdownEditor.tsx": {
+    "mtime": 1792860254.7038226,
+    "seen": 1792870847.8125775,
+    "ast_hash": "a27643a021253ffbdb17259e60a8648d",
+    "semantic_hash": "a27643a021253ffbdb17259e60a8648d"
+  },
+  "src/components/PriorityManager.tsx": {
+    "mtime": 1792860254.7053275,
+    "seen": 1792870847.8125775,
+    "ast_hash": "6ef74477977174a90753a4d44035cf0f",
+    "semantic_hash": "6ef74477977174a90753a4d44035cf0f"
+  },
+  "src/components/TagManager.tsx": {
+    "mtime": 1792860254.7063315,
+    "seen": 1792870847.8125775,
+    "ast_hash": "b816e13d7b97e93bde078b56c92868ec",
+    "semantic_hash": "b816e13d7b97e93bde078b56c92868ec"
+  },
+  "src/components/TaskList.tsx": {
+    "mtime": 1792860254.707333,
+    "seen": 1792870847.8125775,
+    "ast_hash": "88fa10750ac5fe98db2eeaa41b38be71",
+    "semantic_hash": "88fa10750ac5fe98db2eeaa41b38be71"
+  },
+  "src/components/TaskModal.tsx": {
+    "mtime": 1792860254.7080152,
+    "seen": 1792870847.8125775,
+    "ast_hash": "9802337828b994573ad41232d4225e2f",
+    "semantic_hash": "9802337828b994573ad41232d4225e2f"
+  },
+  "src/components/TaskTags.tsx": {
+    "mtime": 1792860254.7080152,
+    "seen": 1792870847.8125775,
+    "ast_hash": "cd13aab3c9f846ac96c7843764bdc5f4",
+    "semantic_hash": "cd13aab3c9f846ac96c7843764bdc5f4"
+  },
+  "src/holidays.ts": {
+    "mtime": 1792860254.7090197,
+    "seen": 1792870847.8125775,
+    "ast_hash": "941bbd5666e650005eb17d5aa680d65c",
+    "semantic_hash": "941bbd5666e650005eb17d5aa680d65c"
+  },
+  "src/main.tsx": {
+    "mtime": 1792860254.7090197,
+    "seen": 1792870847.8125775,
+    "ast_hash": "df8b867ef8943ae1560647a9f5f2db01",
+    "semantic_hash": "df8b867ef8943ae1560647a9f5f2db01"
+  },
+  "src/types.ts": {
+    "mtime": 1792860254.7100196,
+    "seen": 1792870847.8125775,
+    "ast_hash": "598abb636d4a4858f9193a0a84a7f4f4",
+    "semantic_hash": "598abb636d4a4858f9193a0a84a7f4f4"
+  },
+  "tsconfig.json": {
+    "mtime": 1792860254.7100196,
+    "seen": 1792870847.8125775,
+    "ast_hash": "261e30c3a1857945b6786de423904ac6",
+    "semantic_hash": "261e30c3a1857945b6786de423904ac6"
+  },
+  "tsconfig.node.json": {
+    "mtime": 1792860254.7110212,
+    "seen": 1792870847.8125775,
+    "ast_hash": "b77e9813aef706dfd40b46c2ffed05dc",
+    "semantic_hash": "b77e9813aef706dfd40b46c2ffed05dc"
+  },
+  "vite.config.ts": {
+    "mtime": 1792866326.27472,
+    "seen": 1792870847.8125775,
+    "ast_hash": "dafcf885446875496bacf755ef5861dc",
+    "semantic_hash": "dafcf885446875496bacf755ef5861dc"
+  }
+}
