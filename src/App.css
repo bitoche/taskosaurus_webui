@@ -788,7 +788,7 @@ footer {
   top: 20px;
   right: 20px;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 10px;
   z-index: 1000;
 }
@@ -1012,4 +1012,50 @@ input[type="color"]::-moz-color-swatch {
 input[type="color"]:hover {
   transform: scale(1.05);
   border-color: #aaa;
+}
+
+/*  нопка запуска SQL-запросов */
+.sql-btn-fixed {
+  background: #6366f1; /* индиго */
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  color: white;
+}
+.sql-btn-fixed:hover {
+  background: #4f46e5;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+.sql-btn-fixed:active {
+  transform: scale(0.96);
+}
+.sql-btn-fixed svg {
+  stroke: white;
+  stroke-width: 2;
+  fill: none;
+}
+
+/*  нопка закрыти€ тоста */
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  transition: opacity 0.15s, background-color 0.15s, transform 0.15s;
+}
+.toast-close-btn:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.15);
+  transform: scale(1.1);
+}
+.dark .toast-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }

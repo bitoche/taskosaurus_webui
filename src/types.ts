@@ -85,3 +85,11 @@ export interface UpdatePriorityDTO {
   priority_name?: string;
   priority_sorting_weight?: number;
 }
+
+// SQL Query Result
+export interface SqlQueryResult {
+  columns: string[];
+  rows: Record<string, any>[];
+  count: number;
+}
+

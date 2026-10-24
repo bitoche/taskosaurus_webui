@@ -78,9 +78,11 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
   
   const stripRef = useRef<HTMLDivElement>(null);
   const datesRef = useRef<Date[]>([]);
-  const scrollLeftAfterRender = useRef<number | null>(null);
-  const isReloadingScroll = useRef(false);
   const isReloadingLeft = useRef(false);
+  const anchorDateRef = useRef<string | null>(null);
+  const anchorLeftRef = useRef<number | null>(null);
+  const prevScrollWidthRef = useRef<number | null>(null);
+  const prevScrollLeftRef = useRef<number | null>(null);
 
   const initialized = useRef(false);
 
@@ -89,18 +91,34 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
   useLayoutEffect(() => {
     datesRef.current = dates;
     
-    console.log('[CalendarStrip] dates useLayoutEffect:', { isReloadingScroll: isReloadingScroll.current, scrollLeftAfterRender: scrollLeftAfterRender.current, isReloadingLeft: isReloadingLeft.current });
-    
-    // Восстанавливаем позицию скролла после рендера новых элементов
-    if (isReloadingScroll.current && scrollLeftAfterRender.current !== null && stripRef.current) {
-      // Для левой подгрузки добавляем небольшой оффсет для компенсации
-      const offset = isReloadingLeft.current ? LOAD_MORE_DAYS*(30/95) : 0; // 30/95 - вручную подобранное число. При 30 днях прогрузки 95 идеально компенсировало разницу overflow. поэтому теперь оно умножается на этот коэфф.
-      const targetScrollLeft = scrollLeftAfterRender.current + offset;
-      console.log('[CalendarStrip] restoring scrollLeft to:', targetScrollLeft, '(offset:', offset, ')');
-      stripRef.current.scrollLeft = targetScrollLeft;
-      scrollLeftAfterRender.current = null;
-      isReloadingScroll.current = false;
+    // Восстанавливаем позицию скролла после рендера новых элементов слева
+    if (isReloadingLeft.current && stripRef.current) {
+      let delta = 0;
+      if (anchorDateRef.current && anchorLeftRef.current !== null) {
+        const anchorEl = stripRef.current.querySelector<HTMLElement>(
+          `.day-card[data-date="${anchorDateRef.current}"]`
+        );
+        if (anchorEl) {
+          // Реальный сдвиг карточки-якоря в пикселях через getBoundingClientRect
+          const newLeft = anchorEl.getBoundingClientRect().left;
+          delta = newLeft - anchorLeftRef.current;
+        }
+      }
+      // Запасной расчет через изменение scrollWidth, если getBoundingClientRect недоступен
+      if (delta === 0 && prevScrollWidthRef.current !== null) {
+        delta = stripRef.current.scrollWidth - prevScrollWidthRef.current;
+      }
+
+      if (delta !== 0) {
+        const targetScrollLeft = (prevScrollLeftRef.current ?? stripRef.current.scrollLeft) + delta;
+        stripRef.current.scrollLeft = targetScrollLeft;
+      }
+
       isReloadingLeft.current = false;
+      anchorDateRef.current = null;
+      anchorLeftRef.current = null;
+      prevScrollWidthRef.current = null;
+      prevScrollLeftRef.current = null;
     }
   }, [dates]);
 
@@ -189,13 +207,6 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       cur = addDays(cur, 1);
     }
 
-    const cardWidth = 256;
-    const addedWidth = newDates.length * cardWidth;
-    
-    // Сохраняем позицию ДО асинхронных операций
-    const oldScrollLeft = stripRef.current?.scrollLeft || 0;
-    console.log('[CalendarStrip] handleLoadLeft captured:', { oldScrollLeft, addedWidth, dates: dates.length });
-    
     const fromKey = formatLocalDate(newFirst);
     const toKey = formatLocalDate(addDays(firstDate, -1));
     await onLoadRange(fromKey, toKey);
@@ -210,10 +221,14 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       onHolidaysLoadingChange?.(false);
     });
     
-    isReloadingScroll.current = true;
+    // Фиксируем положение текущей первой карточки перед добавлением новых дат в DOM
+    const anchorDateStr = formatLocalDate(firstDate);
+    const anchorEl = stripRef.current?.querySelector<HTMLElement>(`.day-card[data-date="${anchorDateStr}"]`);
+    anchorDateRef.current = anchorDateStr;
+    anchorLeftRef.current = anchorEl ? anchorEl.getBoundingClientRect().left : null;
+    prevScrollWidthRef.current = stripRef.current?.scrollWidth ?? null;
+    prevScrollLeftRef.current = stripRef.current?.scrollLeft ?? null;
     isReloadingLeft.current = true;
-    scrollLeftAfterRender.current = oldScrollLeft + addedWidth;
-    console.log('[CalendarStrip] handleLoadLeft scheduled scrollLeft:', scrollLeftAfterRender.current);
     
     setDates((prev) => [...newDates, ...prev]);
     
@@ -242,14 +257,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       cur = addDays(cur, 1);
     }
 
-    const oldScrollLeft = stripRef.current?.scrollLeft || 0;
-    console.log('[CalendarStrip] handleLoadRight:', { oldScrollLeft, dates: dates.length });
-
-    isReloadingScroll.current = true;
-    scrollLeftAfterRender.current = oldScrollLeft;
-    console.log('[CalendarStrip] handleLoadRight scheduled scrollLeft:', scrollLeftAfterRender.current);
-    
-    setDates((prev) => [...newDates, ...prev]);
+    setDates((prev) => [...prev, ...newDates]);
     
     setLoadedDateKeys((prev) => {
       const next = new Set(prev);

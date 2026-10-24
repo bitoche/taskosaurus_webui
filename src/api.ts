@@ -8,6 +8,7 @@ import {
   TaskPriority,
   CreatePriorityDTO,
   UpdatePriorityDTO,
+  SqlQueryResult,
 } from './types';
 
 const API_BASE = '/api';
@@ -257,3 +258,26 @@ export async function updatePriority(dto: UpdatePriorityDTO): Promise<TaskPriori
 export async function deletePriority(priorityId: number): Promise<void> {
   await request<void>(`${API_BASE}/priority/${priorityId}`, { method: 'DELETE' });
 }
+
+export async function fetchTaskById(taskId: number): Promise<Task> {
+  const path = `${API_BASE}/tasks/${taskId}`;
+  const task = await request<Task>(path);
+  return {
+    ...task,
+    description: task.description ?? null,
+    link_to_taskmanager: task.link_to_taskmanager ?? null,
+    due_date: task.due_date ? task.due_date.slice(0, 10) : null,
+    closed_dttm: task.closed_dttm ? task.closed_dttm.slice(0, 19) : null,
+    created_at: task.created_at ? task.created_at.slice(0, 19) : null,
+  };
+}
+
+export async function executeTaskQuery(sql: string): Promise<SqlQueryResult> {
+  const path = `${API_BASE}/tasks/query`;
+  return request<SqlQueryResult>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: sql }),
+  });
+}
+

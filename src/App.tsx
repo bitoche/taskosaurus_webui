@@ -6,12 +6,14 @@ import {
   assignTagToTask, unassignTagFromTask, createTag,
   deleteTagGlobally, updateTag, checkRemoteUpdates,
   fetchAllPriorities, createPriority, updatePriority, deletePriority,
+  fetchTaskById,
 } from './api';
 import { Task, CreateTaskDTO, UpdateTaskDTO, TaskTag, TaskPriority } from './types';
 import CalendarStrip, { CalendarStripRef } from './components/CalendarStrip';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
-import { ChevronLeft, ChevronRight, Home, Upload, Download, RefreshCw, AlertTriangle, Moon, Sun } from 'lucide-react';
+import SqlQueryModal from './components/SqlQueryModal';
+import { ChevronLeft, ChevronRight, Home, Upload, Download, RefreshCw, AlertTriangle, Moon, Sun, Database, X } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
@@ -28,6 +30,7 @@ const App: React.FC = () => {
   const [modalState, setModalState] = useState<{ isOpen: boolean; task?: Task | null; defaultDate?: string }>({
     isOpen: false,
   });
+  const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
   const [remoteUpdatesAvailable, setRemoteUpdatesAvailable] = useState(false);
 
   // === Темная тема ===
@@ -57,28 +60,53 @@ const App: React.FC = () => {
   const [allPriorities, setAllPriorities] = useState<TaskPriority[]>([]);
   const [filterPriorityId, setFilterPriorityId] = useState<number | null>(null);
 
-  // === Состояние для toast-ов ===
+  // === Состояние для toast-ов с автозакрытием ===
   type Toast = {
     id: string;
     uniqueId: string;
     type: 'info' | 'warning' | 'error' | 'holidays';
     message: React.ReactNode;
     action?: { label: string; handler: () => void };
+    duration?: number;
   };
   const [toastQueue, setToastQueue] = useState<Toast[]>([]);
   const toastIdCounter = useRef(0);
   const activeToasts = useRef<Set<string>>(new Set());
+  const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const removeToast = useCallback((id: string) => {
+    activeToasts.current.delete(id);
+    const timer = toastTimers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      toastTimers.current.delete(id);
+    }
+    setToastQueue(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   const addToast = useCallback((id: string, toast: Omit<Toast, 'id' | 'uniqueId'>) => {
     if (activeToasts.current.has(id)) return;
     activeToasts.current.add(id);
     const uniqueId = `${Date.now()}-${toastIdCounter.current++}`;
     setToastQueue(prev => [...prev, { ...toast, id, uniqueId }]);
-  }, []);
 
-  const removeToast = useCallback((id: string) => {
-    activeToasts.current.delete(id);
-    setToastQueue(prev => prev.filter(t => t.id !== id));
+    // Автоматическое закрытие по таймеру (3.5 сек по умолчанию)
+    // Не закрываем автоматически фоновые процессы загрузки
+    const isPersistent = id === 'syncing' || id === 'holidays-loading' || toast.duration === 0;
+    if (!isPersistent) {
+      const timeoutMs = toast.duration ?? 3500;
+      const timer = setTimeout(() => {
+        removeToast(id);
+      }, timeoutMs);
+      toastTimers.current.set(id, timer);
+    }
+  }, [removeToast]);
+
+  useEffect(() => {
+    return () => {
+      toastTimers.current.forEach(timer => clearTimeout(timer));
+      toastTimers.current.clear();
+    };
   }, []);
 
   // === Вспомогательная функция синхронизации с индикатором ===
@@ -329,6 +357,25 @@ const App: React.FC = () => {
   const handleEditTask = (task: Task) => {
     setModalState({ isOpen: true, task });
   };
+
+  const handleSelectTaskById = useCallback(async (taskId: number) => {
+    let task = tasks.find(t => t.task_id === taskId);
+    if (!task) {
+      try {
+        task = await fetchTaskById(taskId);
+      } catch (err: any) {
+        console.error('Failed to fetch task by id', err);
+        addToast('error-fetch-task', {
+          type: 'error',
+          message: `Не удалось загрузить задачу #${taskId}: ${err?.message || err}`,
+        });
+        return;
+      }
+    }
+    if (task) {
+      setModalState({ isOpen: true, task });
+    }
+  }, [tasks, addToast]);
 
   const handleTaskClickFromList = (task: Task) => {
     let targetDate: string | undefined;
@@ -694,7 +741,16 @@ const App: React.FC = () => {
         <button className="today-btn-fixed" onClick={scrollToToday} title="Перейти к сегодняшнему дню">
           <Home size={20} />
         </button>
+        <button className="sql-btn-fixed" onClick={() => setIsSqlModalOpen(true)} title="SQL-запрос задач">
+          <Database size={20} />
+        </button>
       </div>
+
+      <SqlQueryModal
+        isOpen={isSqlModalOpen}
+        onClose={() => setIsSqlModalOpen(false)}
+        onSelectTask={handleSelectTaskById}
+      />
 
       <div className="toast-container">
         {toastQueue.map((toast, index) => (
@@ -705,6 +761,14 @@ const App: React.FC = () => {
                 {toast.action.label}
               </button>
             )}
+            <button
+              className="toast-close-btn"
+              onClick={() => removeToast(toast.id)}
+              title="Закрыть уведомление"
+              aria-label="Закрыть"
+            >
+              <X size={14} />
+            </button>
           </div>
         ))}
       </div>
