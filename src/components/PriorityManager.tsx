@@ -45,7 +45,7 @@ const PriorityManager: React.FC<Props> = ({
 
   const handleCreate = async () => {
     const name = createName.trim();
-    if (name.length < 1 || name.length > 29) return;
+    if (!name || name.length > 255) return;
     const weight = parseInt(createWeight, 10) || 0;
     setCreating(true);
     try {
@@ -78,7 +78,7 @@ const PriorityManager: React.FC<Props> = ({
   const handleUpdate = async () => {
     if (!onUpdatePriority || editingId === null) return;
     const name = editName.trim();
-    if (name.length < 1 || name.length > 29) return;
+    if (!name || name.length > 255) return;
     const weight = parseInt(editWeight, 10) || 0;
     setUpdating(true);
     try {
@@ -262,9 +262,9 @@ const PriorityEditItem: React.FC<PriorityEditItemProps> = ({
         type="text"
         placeholder={isNew ? 'Название' : 'Название приоритета'}
         value={initialName}
-        onChange={(e) => onNameChange(e.target.value.slice(0, 29))}
+        onChange={(e) => onNameChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        maxLength={29}
+        maxLength={255}
       />
       <input
         type="number"

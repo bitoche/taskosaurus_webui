@@ -1,23 +1,29 @@
 import React from 'react';
-import { CheckCircle2, ExternalLink, AlertCircle, Gauge/*, X*/ } from 'lucide-react';
+import { CheckCircle2, ExternalLink, AlertCircle, Gauge } from 'lucide-react';
 import { Task, TaskTag, TaskPriority } from '../types';
 import TaskTags from './TaskTags';
 
+export type DayCardTask = Task & {
+  isGhost?: boolean;
+  ghostTargetDate?: string;
+  overdueClosed?: number;
+};
+
 interface Props {
   date: Date;
-  tasks: any[]; // задачи с возможным флагом isGhost
+  tasks: DayCardTask[];
   isToday: boolean;
   onAddTask: () => void;
   onEditTask: (task: Task) => void;
   onMoveTask: (taskId: number, newDueDate: string) => void;
   onToggleStatus: (taskId: number, currentStatus: number) => void;
   onGhostClick?: (dateStr: string, taskId?: number) => void;
-  onRemoveTagFromTask?: (taskId: number, tagId: number) => void; // новый проп
+  onRemoveTagFromTask?: (taskId: number, tagId: number) => void;
   dateStr: string;
   highlightedTaskId?: number | null;
-  taskTagsMap?: Map<number, TaskTag[]>; // карта тегов задачи
+  taskTagsMap?: Map<number, TaskTag[]>;
   allPriorities?: TaskPriority[];
-  holiday?: { date: string; isDayOff: boolean } | null; // выходной/праздник
+  holiday?: { date: string; isDayOff: boolean } | null;
 }
 
 function formatDisplayDate(date: Date): string {
@@ -29,16 +35,6 @@ function formatDisplayDate(date: Date): string {
 function formatWeekday(date: Date): string {
   let wd = date.toLocaleString('ru-RU', { weekday: 'short' });
   return wd.charAt(0).toUpperCase() + wd.slice(1);
-}
-
-function escapeHtml(str: string | null | undefined): string {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, (m) => {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
 }
 
 function getOverdueDays(dueDateStr: string | null | undefined): number {
@@ -56,7 +52,6 @@ const DayCard: React.FC<Props> = ({
   date, tasks, isToday, onAddTask, onEditTask, onMoveTask, onToggleStatus, onGhostClick, dateStr, highlightedTaskId,
   onRemoveTagFromTask, taskTagsMap, allPriorities, holiday
 }) => {
-  
   const weekend = holiday?.isDayOff || false;
   const isHoliday = false;
 
@@ -132,11 +127,11 @@ const DayCard: React.FC<Props> = ({
                   className={`task-item ghost-task ${isHighlighted ? 'task-highlight' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onGhostClick?.(task.ghostTargetDate, task.task_id);
+                    onGhostClick?.(task.ghostTargetDate || '', task.task_id);
                   }}
                 >
                   <div className="task-title">
-                    <span className="task-title-text">{escapeHtml(task.title)}</span>
+                    <span className="task-title-text">{task.title}</span>
                   </div>
                 </div>
               );
@@ -146,7 +141,7 @@ const DayCard: React.FC<Props> = ({
             const overdue = getOverdueDays(task.due_date);
             const isCompleted = task.task_status === 2;
             const isActive = task.task_status === 1;
-            const overdueClosed = (task as any).overdueClosed || 0;
+            const overdueClosed = task.overdueClosed || 0;
             const hasLink = task.link_to_taskmanager && task.link_to_taskmanager.trim() !== '';
             const taskTags = taskTagsMap?.get(task.task_id) || [];
 
@@ -183,7 +178,7 @@ const DayCard: React.FC<Props> = ({
               >
                 <div className="task-title">
                   {badge}
-                  <span className="task-title-text">{escapeHtml(task.title)}</span>
+                  <span className="task-title-text">{task.title}</span>
                   <div className="task-actions">
                     <button
                       className="status-toggle-btn"

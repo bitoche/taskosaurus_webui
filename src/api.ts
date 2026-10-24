@@ -1,12 +1,28 @@
-import { Task, CreateTaskDTO, UpdateTaskDTO, TaskComment, TaskTag, TaskTagXTask, TaskPriority, CreatePriorityDTO, UpdatePriorityDTO } from './types';
+import {
+  Task,
+  CreateTaskDTO,
+  UpdateTaskDTO,
+  TaskComment,
+  TaskTag,
+  TaskTagXTask,
+  TaskPriority,
+  CreatePriorityDTO,
+  UpdatePriorityDTO,
+} from './types';
 
 const API_BASE = '/api';
 
-function normalizeDate(date?: string | null): string | undefined {
-  if (!date) return undefined;
+function normalizeDate(date?: string | null): string | null | undefined {
+  if (date === undefined) return undefined;
+  if (!date || date.trim() === '') return null;
   const tIndex = date.indexOf('T');
-  if (tIndex !== -1) return date.slice(0, tIndex);
-  return date;
+  return tIndex !== -1 ? date.slice(0, tIndex) : date;
+}
+
+function normalizeDateTime(dateTime?: string | null): string | null | undefined {
+  if (dateTime === undefined) return undefined;
+  if (!dateTime || dateTime.trim() === '') return null;
+  return dateTime;
 }
 
 function logRequest(method: string, path: string) {
@@ -21,265 +37,223 @@ function logResponse(path: string, data: any, error?: string) {
   }
 }
 
+async function request<T = void>(path: string, options?: RequestInit): Promise<T> {
+  const method = options?.method || 'GET';
+  logRequest(method, path);
+
+  const res = await fetch(path, options);
+
+  if (!res.ok) {
+    let errorMessage = `HTTP ${res.status} ${res.statusText}`;
+    try {
+      const text = await res.text();
+      if (text) {
+        try {
+          const errData = JSON.parse(text);
+          if (typeof errData?.detail === 'string') {
+            errorMessage = errData.detail;
+          } else if (Array.isArray(errData?.detail)) {
+            errorMessage = errData.detail
+              .map((d: any) => (d.msg ? `${d.loc ? d.loc.slice(1).join('.') + ': ' : ''}${d.msg}` : JSON.stringify(d)))
+              .join('; ');
+          } else if (typeof errData?.message === 'string') {
+            errorMessage = errData.message;
+          } else {
+            errorMessage = text;
+          }
+        } catch {
+          errorMessage = text;
+        }
+      }
+    } catch {
+      // fallback to default errorMessage
+    }
+
+    logResponse(path, null, `${res.status}: ${errorMessage}`);
+    throw new Error(errorMessage);
+  }
+
+  if (res.status === 204) {
+    logResponse(path, null);
+    return undefined as unknown as T;
+  }
+
+  const text = await res.text();
+  if (!text || !text.trim()) {
+    logResponse(path, null);
+    return undefined as unknown as T;
+  }
+
+  const data = JSON.parse(text);
+  logResponse(path, data);
+  return data as T;
+}
+
 export async function fetchTasksRange(dateFrom: string, dateTo: string): Promise<Task[]> {
   const path = `${API_BASE}/tasks?date_from=${dateFrom}&date_to=${dateTo}`;
-  logRequest('GET', path);
-  const res = await fetch(path);
-  if (!res.ok) {
-    const errText = await res.text();
-    logResponse(path, null, `${res.status}: ${errText}`);
-    throw new Error('Failed to fetch tasks range');
-  }
-  const text = await res.text();
-  const sanitized = text.replace(/:\s*NaN\b/gi, ': null');
-  const tasks: Task[] = JSON.parse(sanitized);
+  const tasks = await request<Task[]>(path);
   console.log(`[API ←] ${path} received ${tasks.length} tasks`);
   return tasks.map(task => ({
     ...task,
-    description: task.description === undefined ? null : task.description,
-    link_to_taskmanager: task.link_to_taskmanager === undefined ? null : task.link_to_taskmanager,
+    description: task.description ?? null,
+    link_to_taskmanager: task.link_to_taskmanager ?? null,
     due_date: task.due_date ? task.due_date.slice(0, 10) : null,
     closed_dttm: task.closed_dttm ? task.closed_dttm.slice(0, 19) : null,
+    created_at: task.created_at ? task.created_at.slice(0, 19) : null,
   }));
 }
 
-export async function createTask(task: CreateTaskDTO): Promise<void> {
+export async function createTask(task: CreateTaskDTO): Promise<Task> {
   const path = `${API_BASE}/tasks`;
   const payload = {
     ...task,
-    due_date: normalizeDate(task.due_date),
+    description: task.description?.trim() || null,
+    link_to_taskmanager: task.link_to_taskmanager?.trim() || null,
+    due_date: normalizeDate(task.due_date) ?? null,
   };
-  logRequest('POST', path);
-  logRequest('POST body', JSON.stringify(payload));
-  const res = await fetch(path, {
+  return request<Task>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  const text = await res.text();
-  if (!res.ok) {
-    logResponse(path, null, `${res.status}: ${text}`);
-    throw new Error('Failed to create task');
-  }
-  logResponse(path, JSON.parse(text));
 }
 
-export async function updateTask(taskId: number, task: UpdateTaskDTO): Promise<void> {
+export async function updateTask(taskId: number, task: UpdateTaskDTO): Promise<Task> {
   const path = `${API_BASE}/tasks/${taskId}`;
   const { task_id, ...body } = task;
-  const payload = {
-    ...body,
-    due_date: normalizeDate(body.due_date),
-  };
-  logRequest('PUT', path);
-  logRequest('PUT body', JSON.stringify(payload));
-  const res = await fetch(path, {
+  const payload: Record<string, any> = { ...body };
+  if (body.due_date !== undefined) {
+    payload.due_date = normalizeDate(body.due_date);
+  }
+  if (body.closed_dttm !== undefined) {
+    payload.closed_dttm = normalizeDateTime(body.closed_dttm);
+  }
+  if (body.description !== undefined) {
+    payload.description = body.description?.trim() || null;
+  }
+  if (body.link_to_taskmanager !== undefined) {
+    payload.link_to_taskmanager = body.link_to_taskmanager?.trim() || null;
+  }
+  return request<Task>(path, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  const text = await res.text();
-  if (!res.ok) {
-    logResponse(path, null, `${res.status}: ${text}`);
-    throw new Error('Failed to update task');
-  }
-  logResponse(path, JSON.parse(text));
 }
 
 export async function deleteTask(taskId: number): Promise<void> {
-  const path = `${API_BASE}/tasks/${taskId}`;
-  logRequest('DELETE', path);
-  const res = await fetch(path, { method: 'DELETE' });
-  const text = await res.text();
-  if (!res.ok) {
-    logResponse(path, null, `${res.status}: ${text}`);
-    throw new Error('Failed to delete task');
-  }
-  logResponse(path, JSON.parse(text));
+  await request<void>(`${API_BASE}/tasks/${taskId}`, { method: 'DELETE' });
 }
 
-// Новые эндпоинты синхронизации
 export async function syncDownload(): Promise<void> {
-  const path = `${API_BASE}/remote_db/sync_download`;
-  logRequest('POST', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Sync download failed');
-  logResponse(path, await res.json());
+  await request<void>(`${API_BASE}/remote_db/sync_download`, { method: 'POST' });
 }
 
 export async function syncUpload(): Promise<void> {
-  const path = `${API_BASE}/remote_db/sync_upload`;
-  logRequest('POST', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Sync upload failed');
-  logResponse(path, await res.json());
+  await request<void>(`${API_BASE}/remote_db/sync_upload`, { method: 'POST' });
 }
 
 export async function checkRemoteUpdates(): Promise<boolean> {
   const path = `${API_BASE}/remote_db/check_updates`;
-  logRequest('GET', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Failed to check updates');
-  const data = await res.json();
-  console.log(`[API ←] ${path} updates: ${data.updates}`);
-  return data.updates === true;
+  const data = await request<{ updates: boolean }>(path);
+  console.log(`[API ←] ${path} updates: ${data?.updates}`);
+  return data?.updates === true;
 }
 
-// ========== Комментарии ==========
 export async function fetchTaskComments(taskId: number): Promise<TaskComment[]> {
   const path = `${API_BASE}/tasks/${taskId}/comments`;
-  logRequest('GET', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Failed to fetch comments');
-  const comments = await res.json();
+  const comments = await request<TaskComment[]>(path);
   console.log(`[API ←] ${path} received ${comments.length} comments`);
   return comments;
 }
 
-export async function addTaskComment(taskId: number, text: string): Promise<void> {
+export async function addTaskComment(taskId: number, text: string): Promise<TaskComment> {
   const path = `${API_BASE}/tasks/comment`;
-  const payload = { task_id: taskId, text };
-  logRequest('POST', path);
-  logRequest('POST body', JSON.stringify(payload));
-  const res = await fetch(path, {
+  return request<TaskComment>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ task_id: taskId, text }),
   });
-  if (!res.ok) throw new Error('Failed to add comment');
-  logResponse(path, await res.json());
 }
 
 export async function deleteTaskComment(commentId: number): Promise<void> {
-  const path = `${API_BASE}/tasks/comment/delete/${commentId}`;
-  logRequest('DELETE', path);
-  const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete comment');
-  logResponse(path, await res.json());
+  await request<void>(`${API_BASE}/tasks/comment/delete/${commentId}`, { method: 'DELETE' });
 }
 
-// ========== Теги ==========
 export async function fetchAllTags(): Promise<TaskTag[]> {
   const path = `${API_BASE}/task_tags`;
-  logRequest('GET', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Failed to fetch tags');
-  const tags = await res.json();
+  const tags = await request<TaskTag[]>(path);
   console.log(`[API ←] ${path} received ${tags.length} tags`);
   return tags;
 }
 
 export async function fetchTaskTagsXTask(): Promise<TaskTagXTask[]> {
   const path = `${API_BASE}/task_tags/tasks`;
-  logRequest('GET', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Failed to fetch tag assignments');
-  const assignments = await res.json();
+  const assignments = await request<TaskTagXTask[]>(path);
   console.log(`[API ←] ${path} received ${assignments.length} assignments`);
   return assignments;
 }
 
-export async function createTag(tagText: string, tagColor: string): Promise<void> {
+export async function createTag(tagText: string, tagColor: string): Promise<TaskTag> {
   const path = `${API_BASE}/task_tags`;
-  const payload = { tag_text: tagText, tag_color: tagColor };
-  logRequest('POST', path);
-  logRequest('POST body', JSON.stringify(payload));
-  const res = await fetch(path, {
+  return request<TaskTag>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ tag_text: tagText, tag_color: tagColor }),
   });
-  if (!res.ok) throw new Error('Failed to create tag');
-  logResponse(path, await res.json());
 }
 
-export async function assignTagToTask(taskTagId: number, taskId: number): Promise<void> {
+export async function assignTagToTask(taskTagId: number, taskId: number): Promise<TaskTagXTask> {
   const path = `${API_BASE}/task_tags/assign`;
-  const payload = { task_tag_id: taskTagId, task_id: taskId };
-  logRequest('POST', path);
-  logRequest('POST body', JSON.stringify(payload));
-  const res = await fetch(path, {
+  return request<TaskTagXTask>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ task_tag_id: taskTagId, task_id: taskId }),
   });
-  if (!res.ok) throw new Error('Failed to assign tag');
-  logResponse(path, await res.json());
 }
 
 export async function unassignTagFromTask(taskTagId: number, taskId: number): Promise<void> {
-  const path = `${API_BASE}/task_tags/unassign/${taskTagId}/task/${taskId}`;
-  logRequest('DELETE', path);
-  const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to unassign tag');
-  logResponse(path, await res.json());
+  await request<void>(`${API_BASE}/task_tags/unassign/${taskTagId}/task/${taskId}`, { method: 'DELETE' });
 }
 
-// ВНИМАНИЕ: следующий эндпоинт должен быть добавлен в бэкенд (app/api.py)
 export async function deleteTagGlobally(taskTagId: number): Promise<void> {
-  const path = `${API_BASE}/task_tags/${taskTagId}`;
-  logRequest('DELETE', path);
-  const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete tag');
-  logResponse(path, await res.json());
+  await request<void>(`${API_BASE}/task_tags/${taskTagId}`, { method: 'DELETE' });
 }
 
-export async function updateTag(tagId: number, tagText: string, tagColor: string): Promise<void> {
+export async function updateTag(tagId: number, tagText: string, tagColor: string): Promise<TaskTag> {
   const path = `${API_BASE}/task_tags/${tagId}`;
-  const payload = { tag_text: tagText, tag_color: tagColor };
-  logRequest('PUT', path);
-  logRequest('PUT body', JSON.stringify(payload));
-  const res = await fetch(path, {
+  return request<TaskTag>(path, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ tag_text: tagText, tag_color: tagColor }),
   });
-  if (!res.ok) throw new Error('Failed to update tag');
-  logResponse(path, await res.json());
 }
 
-// ========== Приоритеты ==========
 export async function fetchAllPriorities(): Promise<TaskPriority[]> {
   const path = `${API_BASE}/priority`;
-  logRequest('GET', path);
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Failed to fetch priorities');
-  const priorities = await res.json();
+  const priorities = await request<TaskPriority[]>(path);
   console.log(`[API ←] ${path} received ${priorities.length} priorities`);
   return priorities;
 }
 
-export async function createPriority(dto: CreatePriorityDTO): Promise<void> {
+export async function createPriority(dto: CreatePriorityDTO): Promise<TaskPriority> {
   const path = `${API_BASE}/priority`;
-  logRequest('POST', path);
-  logRequest('POST body', JSON.stringify(dto));
-  const res = await fetch(path, {
+  return request<TaskPriority>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error('Failed to create priority');
-  logResponse(path, await res.json());
 }
 
-export async function updatePriority(dto: UpdatePriorityDTO): Promise<void> {
+export async function updatePriority(dto: UpdatePriorityDTO): Promise<TaskPriority> {
   const path = `${API_BASE}/priority/${dto.priority_id}`;
-  logRequest('PUT', path);
-  logRequest('PUT body', JSON.stringify(dto));
-  const res = await fetch(path, {
+  return request<TaskPriority>(path, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error('Failed to update priority');
-  logResponse(path, await res.json());
 }
 
 export async function deletePriority(priorityId: number): Promise<void> {
-  const path = `${API_BASE}/priority/${priorityId}`;
-  logRequest('DELETE', path);
-  const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete priority');
-  logResponse(path, await res.json());
+  await request<void>(`${API_BASE}/priority/${priorityId}`, { method: 'DELETE' });
 }
-

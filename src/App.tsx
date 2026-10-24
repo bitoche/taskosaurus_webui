@@ -29,8 +29,6 @@ const App: React.FC = () => {
     isOpen: false,
   });
   const [remoteUpdatesAvailable, setRemoteUpdatesAvailable] = useState(false);
-  const [checkingUpdates, setCheckingUpdates] = useState(false);
-  const isFirstRender = useRef(true);
 
   // === Темная тема ===
   const [isDark, setIsDark] = useState(() => {
@@ -72,7 +70,7 @@ const App: React.FC = () => {
   const activeToasts = useRef<Set<string>>(new Set());
 
   const addToast = useCallback((id: string, toast: Omit<Toast, 'id' | 'uniqueId'>) => {
-    if (activeToasts.current.has(id)) return; // Уже есть такой toast
+    if (activeToasts.current.has(id)) return;
     activeToasts.current.add(id);
     const uniqueId = `${Date.now()}-${toastIdCounter.current++}`;
     setToastQueue(prev => [...prev, { ...toast, id, uniqueId }]);
@@ -92,8 +90,9 @@ const App: React.FC = () => {
     }
     try {
       await syncFn();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Sync error:', err);
+      addToast('error-sync', { type: 'error', message: `Ошибка синхронизации: ${err?.message || err}` });
     } finally {
       syncCounter.current--;
       if (syncCounter.current === 0) {
@@ -103,54 +102,14 @@ const App: React.FC = () => {
     }
   }, [addToast, removeToast]);
 
-  // === Обработчики для кнопок синхронизации ===
-  const handleSaveToCloud = async () => {
-    setSaving(true);
-    await performSync(syncUpload);
-    setHasUnsavedChanges(false);
-    setTimeout(() => setSaving(false), 500);
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
-  const handleLoadFromCloud = async () => {
-    setLoadingCloud(true);
-    await performSync(syncDownload);
-    const today = new Date();
-    const from = new Date(today);
-    from.setDate(today.getDate() - 30);
-    const to = new Date(today);
-    to.setDate(today.getDate() + 30);
-    const fromStr = formatLocalDate(from);
-    const toStr = formatLocalDate(to);
-    await Promise.all([
-      refreshTasksForRange(fromStr, toStr),
-      loadTagsData(),
-      loadPrioritiesData(),
-    ]);
-    setHasUnsavedChanges(false);
-    setRemoteUpdatesAvailable(false);
-    setTimeout(() => setLoadingCloud(false), 500);
-  };
-
-  const handleRefreshTasks = async () => {
-    setRefreshing(true);
-    await performSync(async () => {
-      const today = new Date();
-      const from = new Date(today);
-      from.setDate(today.getDate() - 30);
-      const to = new Date(today);
-      to.setDate(today.getDate() + 30);
-      const fromStr = formatLocalDate(from);
-      const toStr = formatLocalDate(to);
-      await Promise.all([
-        refreshTasksForRange(fromStr, toStr),
-        loadTagsData(),
-        loadPrioritiesData(),
-      ]);
-    });
-    setTimeout(() => setRefreshing(false), 500);
-  };
-
-  // === Загрузка задач и тегов (чистая, без автоматической синхронизации) ===
+  // === Загрузка задач и тегов ===
   const loadTasksForRange = useCallback(async (from: string, to: string) => {
     try {
       const newTasks = await fetchTasksRange(from, to);
@@ -160,23 +119,25 @@ const App: React.FC = () => {
         return [...prev, ...uniqueNew];
       });
       return newTasks;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load range', err);
+      addToast('error-load-tasks', { type: 'error', message: `Ошибка загрузки задач: ${err?.message || err}` });
       return [];
     }
-  }, []);
+  }, [addToast]);
 
-  // === Полное обновление задач за период (заменяет весь список) ===
+  // === Полное обновление задач за период ===
   const refreshTasksForRange = useCallback(async (from: string, to: string) => {
     try {
       const newTasks = await fetchTasksRange(from, to);
       setTasks(newTasks);
       return newTasks;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to refresh tasks range', err);
+      addToast('error-refresh-tasks', { type: 'error', message: `Ошибка обновления задач: ${err?.message || err}` });
       return [];
     }
-  }, []);
+  }, [addToast]);
 
   const loadTagsData = useCallback(async () => {
     try {
@@ -192,28 +153,88 @@ const App: React.FC = () => {
       }
       setAllTags(tags);
       setTaskTagsMap(map);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load tags data', err);
+      addToast('error-load-tags', { type: 'error', message: `Ошибка загрузки тегов: ${err?.message || err}` });
     }
-  }, []);
+  }, [addToast]);
 
   const loadPrioritiesData = useCallback(async () => {
     try {
       const priorities = await fetchAllPriorities();
       setAllPriorities(priorities);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load priorities data', err);
+      addToast('error-load-priorities', { type: 'error', message: `Ошибка загрузки приоритетов: ${err?.message || err}` });
     }
-  }, []);
+  }, [addToast]);
 
-  const formatLocalDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  // === Обработчики для кнопок синхронизации ===
+  const handleSaveToCloud = async () => {
+    setSaving(true);
+    try {
+      await performSync(syncUpload);
+      setHasUnsavedChanges(false);
+    } catch (err: any) {
+      console.error('Failed to save to cloud', err);
+      addToast('error-save', { type: 'error', message: `Ошибка сохранения в облако: ${err?.message || err}` });
+    } finally {
+      setTimeout(() => setSaving(false), 500);
+    }
   };
 
-  // === Инициализация: загружаем данные только один раз при старте (без синхронизации) ===
+  const handleLoadFromCloud = async () => {
+    setLoadingCloud(true);
+    try {
+      await performSync(syncDownload);
+      const today = new Date();
+      const from = new Date(today);
+      from.setDate(today.getDate() - 30);
+      const to = new Date(today);
+      to.setDate(today.getDate() + 30);
+      const fromStr = formatLocalDate(from);
+      const toStr = formatLocalDate(to);
+      await Promise.all([
+        refreshTasksForRange(fromStr, toStr),
+        loadTagsData(),
+        loadPrioritiesData(),
+      ]);
+      setHasUnsavedChanges(false);
+      setRemoteUpdatesAvailable(false);
+    } catch (err: any) {
+      console.error('Failed to load from cloud', err);
+      addToast('error-load', { type: 'error', message: `Ошибка загрузки из облака: ${err?.message || err}` });
+    } finally {
+      setTimeout(() => setLoadingCloud(false), 500);
+    }
+  };
+
+  const handleRefreshTasks = async () => {
+    setRefreshing(true);
+    try {
+      await performSync(async () => {
+        const today = new Date();
+        const from = new Date(today);
+        from.setDate(today.getDate() - 30);
+        const to = new Date(today);
+        to.setDate(today.getDate() + 30);
+        const fromStr = formatLocalDate(from);
+        const toStr = formatLocalDate(to);
+        await Promise.all([
+          refreshTasksForRange(fromStr, toStr),
+          loadTagsData(),
+          loadPrioritiesData(),
+        ]);
+      });
+    } catch (err: any) {
+      console.error('Failed to refresh tasks', err);
+      addToast('error-refresh', { type: 'error', message: `Ошибка обновления: ${err?.message || err}` });
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
+  };
+
+  // === Инициализация: загружаем данные только один раз при старте ===
   useEffect(() => {
     const today = new Date();
     const from = new Date(today);
@@ -230,7 +251,7 @@ const App: React.FC = () => {
     ]).finally(() => setLoading(false));
   }, [loadTasksForRange, loadTagsData, loadPrioritiesData]);
 
-  // === Предупреждение при попытке закрыть/перезагрузить страницу, если есть несохранённые изменения ===
+  // === Предупреждение при закрытии страницы при наличии изменений ===
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -242,17 +263,16 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // === Функция проверки обновлений с индикатором ===
+  // === Фоновая проверка обновлений (без навязчивых индикаторов каждые 10 сек) ===
   const checkRemoteUpdatesHandler = useCallback(async () => {
-    if (remoteUpdatesAvailable) return; // Уже есть изменения в облаке, проверять нет смысла
-    setCheckingUpdates(true);
+    if (remoteUpdatesAvailable) return;
     try {
       const hasUpdates = await checkRemoteUpdates();
-      setRemoteUpdatesAvailable(hasUpdates);
-      setTimeout(() => setCheckingUpdates(false), 1000);
+      if (hasUpdates) {
+        setRemoteUpdatesAvailable(true);
+      }
     } catch (err) {
       console.error('Failed to check remote updates', err);
-      setTimeout(() => setCheckingUpdates(false), 1000);
     }
   }, [remoteUpdatesAvailable]);
   
@@ -261,26 +281,6 @@ const App: React.FC = () => {
     const interval = setInterval(checkRemoteUpdatesHandler, 10000);
     return () => clearInterval(interval);
   }, [checkRemoteUpdatesHandler]);
-
-  // Toast для проверки обновлений (только после первого рендера)
-  useEffect(() => {
-    if (isFirstRender.current) return;
-    if (checkingUpdates) {
-      addToast('checking', { type: 'info', message: <><RefreshCw size={16} className="spin-icon"/></> });
-    }
-  }, [checkingUpdates, addToast]);
-
-  useEffect(() => {
-    if (isFirstRender.current) return;
-    if (!checkingUpdates) {
-      removeToast('checking');
-    }
-  }, [checkingUpdates, removeToast]);
-
-  // Mark first render as done
-  useEffect(() => {
-    isFirstRender.current = false;
-  }, []);
 
   // Toast для доступных обновлений в облаке
   useEffect(() => {
@@ -331,15 +331,11 @@ const App: React.FC = () => {
   };
 
   const handleTaskClickFromList = (task: Task) => {
-    // Определяем целевую дату для прокрутки
     let targetDate: string | undefined;
     
     if (task.task_status === 2 && task.closed_dttm) {
-      // Завершённая задача — крутим к дате завершения
       targetDate = task.closed_dttm.slice(0, 10);
     } else if (task.due_date) {
-      // Активная задача (в т.ч. просроченная) — крутим к due_date
-      // Там будет ghost-карточка, которая и должна моргать
       targetDate = task.due_date;
     }
     
@@ -349,50 +345,66 @@ const App: React.FC = () => {
   };
 
   const handleSaveTask = async (taskData: Omit<Task, 'task_id'>) => {
-    if (modalState.task) {
-      const updateDto: UpdateTaskDTO = {
-        task_id: modalState.task.task_id,
-        title: taskData.title ?? undefined,
-        description: taskData.description ?? undefined,
-        link_to_taskmanager: taskData.link_to_taskmanager ?? undefined,
-        due_date: taskData.due_date ?? undefined,
-        closed_dttm: taskData.closed_dttm ?? undefined,
-        task_status: taskData.task_status ?? undefined,
-        task_priority_id: taskData.task_priority_id ?? undefined,
-      };
-      await updateTask(modalState.task.task_id, updateDto);
-      setTasks(prev => prev.map(t => t.task_id === modalState.task!.task_id ? { ...t, ...taskData } : t));
-      setModalState({ isOpen: false });
-      setHasUnsavedChanges(true);
-    } else {
-      const createDto: CreateTaskDTO = {
-        title: taskData.title,
-        description: taskData.description ?? null,
-        link_to_taskmanager: taskData.link_to_taskmanager ?? null,
-        due_date: taskData.due_date ?? undefined,
-        task_status: taskData.task_status ?? null,
-        task_priority_id: taskData.task_priority_id ?? null,
-      };
-      await createTask(createDto);
-      const today = new Date();
-      const from = new Date(today);
-      from.setDate(today.getDate() - 30);
-      const to = new Date(today);
-      to.setDate(today.getDate() + 30);
-      await loadTasksForRange(formatLocalDate(from), formatLocalDate(to));
-      setModalState({ isOpen: false });
-      setHasUnsavedChanges(true);
+    try {
+      if (modalState.task) {
+        const updateDto: UpdateTaskDTO = {
+          task_id: modalState.task.task_id,
+          title: taskData.title ?? undefined,
+          description: taskData.description ?? undefined,
+          link_to_taskmanager: taskData.link_to_taskmanager ?? undefined,
+          due_date: taskData.due_date ?? undefined,
+          closed_dttm: taskData.closed_dttm ?? undefined,
+          task_status: taskData.task_status ?? undefined,
+          task_priority_id: taskData.task_priority_id ?? undefined,
+        };
+        const updated = await updateTask(modalState.task.task_id, updateDto);
+        setTasks(prev => prev.map(t => (t.task_id === modalState.task!.task_id ? { ...t, ...taskData, ...updated } : t)));
+        setModalState({ isOpen: false });
+        setHasUnsavedChanges(true);
+      } else {
+        const createDto: CreateTaskDTO = {
+          title: taskData.title,
+          description: taskData.description ?? null,
+          link_to_taskmanager: taskData.link_to_taskmanager ?? null,
+          due_date: taskData.due_date ?? undefined,
+          task_status: taskData.task_status ?? null,
+          task_priority_id: taskData.task_priority_id ?? null,
+        };
+        await createTask(createDto);
+        const today = new Date();
+        const from = new Date(today);
+        from.setDate(today.getDate() - 30);
+        const to = new Date(today);
+        to.setDate(today.getDate() + 30);
+        await loadTasksForRange(formatLocalDate(from), formatLocalDate(to));
+        setModalState({ isOpen: false });
+        setHasUnsavedChanges(true);
+      }
+    } catch (err: any) {
+      console.error('Failed to save task', err);
+      addToast('error-task-save', {
+        type: 'error',
+        message: `Ошибка сохранения задачи: ${err?.message || err}`,
+      });
     }
   };
 
   const handleDeleteTask = async (taskId: number) => {
     if (window.confirm('Удалить задачу?')) {
-      await deleteTask(taskId);
-      setTasks(prev => prev.filter(t => t.task_id !== taskId));
-      if (modalState.task?.task_id === taskId) {
-        setModalState({ isOpen: false });
+      try {
+        await deleteTask(taskId);
+        setTasks(prev => prev.filter(t => t.task_id !== taskId));
+        if (modalState.task?.task_id === taskId) {
+          setModalState({ isOpen: false });
+        }
+        setHasUnsavedChanges(true);
+      } catch (err: any) {
+        console.error('Failed to delete task', err);
+        addToast('error-task-delete', {
+          type: 'error',
+          message: `Ошибка удаления задачи: ${err?.message || err}`,
+        });
       }
-      setHasUnsavedChanges(true);
     }
   };
 
@@ -408,9 +420,17 @@ const App: React.FC = () => {
       task_status: taskToUpdate.task_status,
       task_priority_id: taskToUpdate.task_priority_id ?? null,
     };
-    await updateTask(taskId, updateDto);
-    setTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, due_date: newDueDate } : t));
-    setHasUnsavedChanges(true);
+    try {
+      await updateTask(taskId, updateDto);
+      setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: newDueDate } : t)));
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to move task', err);
+      addToast('error-task-move', {
+        type: 'error',
+        message: `Ошибка переноса задачи: ${err?.message || err}`,
+      });
+    }
   };
 
   const handleToggleStatus = async (taskId: number, newStatus: number) => {
@@ -425,9 +445,17 @@ const App: React.FC = () => {
       task_status: newStatus,
       task_priority_id: taskToUpdate.task_priority_id ?? null,
     };
-    await updateTask(taskId, updateDto);
-    setTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, task_status: newStatus } : t));
-    setHasUnsavedChanges(true);
+    try {
+      await updateTask(taskId, updateDto);
+      setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, task_status: newStatus } : t)));
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to toggle status', err);
+      addToast('error-task-status', {
+        type: 'error',
+        message: `Ошибка изменения статуса: ${err?.message || err}`,
+      });
+    }
   };
 
   const closeModal = () => setModalState({ isOpen: false });
@@ -441,55 +469,127 @@ const App: React.FC = () => {
         .map(a => tags.find(t => t.task_tag_id === a.task_tag_id))
         .filter((t): t is TaskTag => t !== undefined);
       setTaskTagsMap(prev => new Map(prev).set(taskId, taskTags));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to refresh tags for task', err);
+      addToast('error-refresh-tags', {
+        type: 'error',
+        message: `Ошибка обновления тегов задачи: ${err?.message || err}`,
+      });
     }
-  }, []);
+  }, [addToast]);
 
-  // Назначение / удаление тегов (также помечаем как изменения)
   const handleAssignTag = useCallback(async (tagId: number) => {
     if (!modalState.task) return;
-    await assignTagToTask(tagId, modalState.task.task_id);
-    await refreshTagsForTask(modalState.task.task_id);
-    setHasUnsavedChanges(true);
-  }, [modalState.task, refreshTagsForTask]);
+    try {
+      await assignTagToTask(tagId, modalState.task.task_id);
+      await refreshTagsForTask(modalState.task.task_id);
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to assign tag', err);
+      addToast('error-tag-assign', {
+        type: 'error',
+        message: `Ошибка назначения тега: ${err?.message || err}`,
+      });
+    }
+  }, [modalState.task, refreshTagsForTask, addToast]);
 
-  const handleRemoveTagFromTask = useCallback(async (tagId: number) => {
-    if (!modalState.task) return;
-    await unassignTagFromTask(tagId, modalState.task.task_id);
-    await refreshTagsForTask(modalState.task.task_id);
-    setHasUnsavedChanges(true);
-  }, [modalState.task, refreshTagsForTask]);
+  const handleRemoveTagFromTask = useCallback(async (taskId: number, tagId: number) => {
+    try {
+      await unassignTagFromTask(tagId, taskId);
+      await refreshTagsForTask(taskId);
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to remove tag from task', err);
+      addToast('error-tag-remove', {
+        type: 'error',
+        message: `Ошибка отвязки тега: ${err?.message || err}`,
+      });
+    }
+  }, [refreshTagsForTask, addToast]);
 
   const handleCreateTag = useCallback(async (tagText: string, tagColor: string) => {
-    await createTag(tagText, tagColor);
-    await loadTagsData();
-    setHasUnsavedChanges(true);
-  }, [loadTagsData]);
+    try {
+      await createTag(tagText, tagColor);
+      await loadTagsData();
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to create tag', err);
+      addToast('error-tag-create', {
+        type: 'error',
+        message: `Ошибка создания тега: ${err?.message || err}`,
+      });
+    }
+  }, [loadTagsData, addToast]);
 
   const handleUpdateTag = useCallback(async (tagId: number, text: string, color: string) => {
-    await updateTag(tagId, text, color);
-    await loadTagsData();
-    setHasUnsavedChanges(true);
-  }, [loadTagsData]);
+    try {
+      await updateTag(tagId, text, color);
+      await loadTagsData();
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to update tag', err);
+      addToast('error-tag-update', {
+        type: 'error',
+        message: `Ошибка обновления тега: ${err?.message || err}`,
+      });
+    }
+  }, [loadTagsData, addToast]);
+
+  const handleDeleteTagGlobally = useCallback(async (tagId: number) => {
+    try {
+      await deleteTagGlobally(tagId);
+      await loadTagsData();
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to delete tag globally', err);
+      addToast('error-tag-delete', {
+        type: 'error',
+        message: `Ошибка удаления тега: ${err?.message || err}`,
+      });
+    }
+  }, [loadTagsData, addToast]);
 
   const handleCreatePriority = useCallback(async (name: string, color: string, weight: number) => {
-    await createPriority({ priority_name: name, priority_color: color, priority_sorting_weight: weight });
-    await loadPrioritiesData();
-    setHasUnsavedChanges(true);
-  }, [loadPrioritiesData]);
+    try {
+      await createPriority({ priority_name: name, priority_color: color, priority_sorting_weight: weight });
+      await loadPrioritiesData();
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to create priority', err);
+      addToast('error-priority-create', {
+        type: 'error',
+        message: `Ошибка создания приоритета: ${err?.message || err}`,
+      });
+    }
+  }, [loadPrioritiesData, addToast]);
 
   const handleUpdatePriority = useCallback(async (priorityId: number, name: string, color: string, weight: number) => {
-    await updatePriority({ priority_id: priorityId, priority_name: name, priority_color: color, priority_sorting_weight: weight });
-    await loadPrioritiesData();
-    setHasUnsavedChanges(true);
-  }, [loadPrioritiesData]);
+    try {
+      await updatePriority({ priority_id: priorityId, priority_name: name, priority_color: color, priority_sorting_weight: weight });
+      await loadPrioritiesData();
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to update priority', err);
+      addToast('error-priority-update', {
+        type: 'error',
+        message: `Ошибка обновления приоритета: ${err?.message || err}`,
+      });
+    }
+  }, [loadPrioritiesData, addToast]);
 
   const handleDeletePriority = useCallback(async (priorityId: number) => {
-    await deletePriority(priorityId);
-    await loadPrioritiesData();
-    setHasUnsavedChanges(true);
-  }, [loadPrioritiesData]);
+    try {
+      await deletePriority(priorityId);
+      await loadPrioritiesData();
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      console.error('Failed to delete priority', err);
+      addToast('error-priority-delete', {
+        type: 'error',
+        message: `Ошибка удаления приоритета: ${err?.message || err}`,
+      });
+    }
+  }, [loadPrioritiesData, addToast]);
 
   if (loading) return <div className="calendar-main">Загрузка...</div>;
 
@@ -544,7 +644,7 @@ const App: React.FC = () => {
           onCreateTag={handleCreateTag}
           onFilterByTag={setFilterTagId}
           activeFilterTagId={filterTagId}
-          onDeleteTagGlobally={deleteTagGlobally}
+          onDeleteTagGlobally={handleDeleteTagGlobally}
           onUpdateTag={handleUpdateTag}
         />
         <PriorityManager
@@ -568,19 +668,19 @@ const App: React.FC = () => {
         </footer>
       </div>
       <TaskModal
-          isOpen={modalState.isOpen}
-          task={modalState.task || undefined}
-          defaultDate={modalState.defaultDate}
-          onSave={handleSaveTask}
-          onDelete={() => { if (modalState.task) handleDeleteTask(modalState.task.task_id); }}
-          onClose={closeModal}
-          allTags={allTags}
-          taskTags={modalState.task ? taskTagsMap.get(modalState.task.task_id) || [] : []}
-          onAssignTag={handleAssignTag}
-          onRemoveTag={handleRemoveTagFromTask}
-          onCreateTag={handleCreateTag}
-          allPriorities={allPriorities}
-        />
+        isOpen={modalState.isOpen}
+        task={modalState.task || undefined}
+        defaultDate={modalState.defaultDate}
+        onSave={handleSaveTask}
+        onDelete={() => { if (modalState.task) handleDeleteTask(modalState.task.task_id); }}
+        onClose={closeModal}
+        allTags={allTags}
+        taskTags={modalState.task ? taskTagsMap.get(modalState.task.task_id) || [] : []}
+        onAssignTag={handleAssignTag}
+        onRemoveTag={(tagId) => { if (modalState.task) handleRemoveTagFromTask(modalState.task.task_id, tagId); }}
+        onCreateTag={handleCreateTag}
+        allPriorities={allPriorities}
+      />
       <div className="fixed-buttons">
         <button className={`sync-btn ${saving ? 'sync-btn-loading' : ''}`} onClick={handleSaveToCloud} disabled={saving || loadingCloud || refreshing} title="Сохранить в облако">
           <Upload size={20} className={saving ? 'pulse-icon' : ''} />

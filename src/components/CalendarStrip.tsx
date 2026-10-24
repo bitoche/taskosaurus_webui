@@ -8,7 +8,7 @@ import {
   useLayoutEffect,
 } from 'react';
 
-import DayCard from './DayCard';
+import DayCard, { DayCardTask } from './DayCard';
 import { Task, TaskTag, TaskPriority } from '../types';
 import { getDaysInfo, getLocalWeekends } from '../holidays';
 import './CalendarStrip.css';
@@ -249,7 +249,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
     scrollLeftAfterRender.current = oldScrollLeft;
     console.log('[CalendarStrip] handleLoadRight scheduled scrollLeft:', scrollLeftAfterRender.current);
     
-    setDates((prev) => [...prev, ...newDates]);
+    setDates((prev) => [...newDates, ...prev]);
     
     setLoadedDateKeys((prev) => {
       const next = new Set(prev);
@@ -346,8 +346,8 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
   // =========================
   // TASK GROUPING
   // =========================
-  const groupTasksByDate = (): Map<string, any[]> => {
-    const map = new Map<string, any[]>();
+  const groupTasksByDate = (): Map<string, DayCardTask[]> => {
+    const map = new Map<string, DayCardTask[]>();
     const today = getTodayDate();
     const todayKey = formatLocalDate(today);
     
@@ -420,7 +420,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
   }
 
   // Сортировка задач внутри дня: по весу приоритета (ASC), затем по task_id (ASC)
-  const sortTasksByPriority = (dayTasks: any[]) => {
+  const sortTasksByPriority = (dayTasks: DayCardTask[]) => {
     return [...dayTasks].sort((a, b) => {
       const wA = a.task_priority_id != null ? (priorityWeightMap.get(a.task_priority_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
       const wB = b.task_priority_id != null ? (priorityWeightMap.get(b.task_priority_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
@@ -429,60 +429,8 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
     });
   };
 
-  // =========================
-  // EXPOSE METHODS
-  // =========================
   useImperativeHandle(ref, () => ({
-    scrollToDate: async (dateStr: string, taskId?: number) => {
-      if (!stripRef.current) return;
-      
-      // Проверяем, есть ли дата в текущем диапазоне
-      const currentDateKeys = datesRef.current.map(d => formatLocalDate(d));
-      const dateIndex = currentDateKeys.indexOf(dateStr);
-      
-      if (dateIndex === -1) {
-        // Дата вне диапазона — нужно загрузить нужный диапазон
-        const targetDate = new Date(dateStr);
-        const firstDate = datesRef.current[0];
-        const lastDate = datesRef.current[datesRef.current.length - 1];
-        
-        if (targetDate < firstDate) {
-          // Дата слева — загружаем влево
-          const daysDiff = Math.ceil((firstDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
-          const loadsNeeded = Math.ceil(daysDiff / LOAD_MORE_DAYS);
-          
-          for (let i = 0; i < loadsNeeded; i++) {
-            await handleLoadLeft();
-          }
-        } else if (targetDate > lastDate) {
-          // Дата справа — загружаем вправо
-          const daysDiff = Math.ceil((targetDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-          const loadsNeeded = Math.ceil(daysDiff / LOAD_MORE_DAYS);
-          
-          for (let i = 0; i < loadsNeeded; i++) {
-            await handleLoadRight();
-          }
-        }
-        
-        // Даём время на рендер после загрузки
-        await new Promise(resolve => setTimeout(resolve, 150));
-      }
-      
-      // Теперь ищем карточку и прокручиваем
-      const targetCard = stripRef.current.querySelector(`[data-date="${dateStr}"]`) as HTMLElement | null;
-      if (targetCard) {
-        stripRef.current.scrollTo({
-          left: Math.max(0, targetCard.offsetLeft - 46),
-          behavior: 'smooth',
-        });
-        if (taskId !== undefined) {
-          setTimeout(() => {
-            setHighlightedTaskId(taskId);
-            setTimeout(() => setHighlightedTaskId(null), 2000);
-          }, 300);
-        }
-      }
-    },
+    scrollToDate: navigateToDate,
     scrollLeft: () => {
       if (stripRef.current) stripRef.current.scrollLeft -= 280;
     },

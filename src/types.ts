@@ -1,10 +1,11 @@
 export interface Task {
   task_id: number;
   title: string;
-  description?: string | null ;
+  description?: string | null;
   link_to_taskmanager?: string | null;
   due_date?: string | null;        // YYYY-MM-DD
   closed_dttm?: string | null;     // ISO datetime закрытия
+  created_at?: string | null;      // ISO datetime создания
   task_status?: number | null;
   task_priority_id?: number | null;
 }
@@ -13,7 +14,7 @@ export interface CreateTaskDTO {
   title: string;
   description?: string | null;
   link_to_taskmanager?: string | null;
-  due_date?: string;
+  due_date?: string | null;
   task_status?: number | null;
   task_priority_id?: number | null;
 }

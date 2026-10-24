@@ -39,7 +39,7 @@ const TagManager: React.FC<Props> = ({
 
   const handleCreate = async () => {
     const text = createText.trim();
-    if (text.length < 2 || text.length > 29) return;
+    if (!text || text.length > 255) return;
     setCreating(true);
     try {
       await onCreateTag(text, createColor);
@@ -69,7 +69,7 @@ const TagManager: React.FC<Props> = ({
   const handleUpdate = async () => {
     if (!onUpdateTag || editingTagId === null) return;
     const text = editText.trim();
-    if (text.length < 2 || text.length > 29) return;
+    if (!text || text.length > 255) return;
     setUpdating(true);
     try {
       await onUpdateTag(editingTagId, text, editColor);
@@ -256,9 +256,9 @@ const TagEditItem: React.FC<TagEditItemProps> = ({
         type="text"
         placeholder={isNew ? 'Название' : 'Название тега'}
         value={initialText}
-        onChange={(e) => onTextChange(e.target.value.slice(0, 29))}
+        onChange={(e) => onTextChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        maxLength={29}
+        maxLength={255}
       />
       <button
         className="tag-action-btn tag-action-save"

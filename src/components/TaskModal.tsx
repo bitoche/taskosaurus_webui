@@ -99,51 +99,65 @@ const TaskModal: React.FC<Props> = ({
       setShowMore(false);
       originalDataRef.current = { title: '', description: '', dueDate: defaultDate || '', link: '', closedDate: '' };
     }
+    hasModalChangesRef.current = false;
   }, [task, defaultDate]);
 
-  // Проверка изменений формы
+  // Проверка изменений при вводе
   useEffect(() => {
-    if (originalDataRef.current === null) return;
-    const orig = originalDataRef.current;
-    const changed = (
-      title !== orig.title ||
-      description !== orig.description ||
-      dueDate !== orig.dueDate ||
-      link !== orig.link ||
-      closedDate !== orig.closedDate ||
-      taskPriorityId !== (task?.task_priority_id ?? null)
-    );
+    if (!originalDataRef.current) return;
+    const currentDueDate = dueDate || '';
+    const currentClosedDate = closedDate ? closedDate.slice(0, 16) : '';
+    const changed =
+      title !== originalDataRef.current.title ||
+      description !== originalDataRef.current.description ||
+      currentDueDate !== originalDataRef.current.dueDate ||
+      link !== originalDataRef.current.link ||
+      currentClosedDate !== originalDataRef.current.closedDate;
     hasModalChangesRef.current = changed;
-  }, [title, description, dueDate, link, closedDate, taskPriorityId, task]);
+  }, [title, description, dueDate, link, closedDate]);
 
-  // Закрытие селектора тегов при клике вне его области
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (tagSelectorRef.current && !tagSelectorRef.current.contains(event.target as Node)) {
-        setShowTagSelector(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // === Функция подтверждения закрытия (пункт 3.2) ===
+  // Закрытие при клике вне модалки с подтверждением
   const handleConfirmClose = useCallback(() => {
     if (hasModalChangesRef.current) {
-      const confirmed = window.confirm('Есть несохранённые изменения. Закрыть без сохранения?');
-      if (!confirmed) return;
+      if (!window.confirm('Есть несохранённые изменения. Закрыть окно?')) {
+        return;
+      }
     }
     onClose();
   }, [onClose]);
 
-  // ESC для закрытия модалки
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleConfirmClose();
+    const handleClickOutside = (e: MouseEvent) => {
+      // Игнорируем клики внутри выпадающего списка тегов
+      if (tagSelectorRef.current && tagSelectorRef.current.contains(e.target as Node)) {
+        return;
+      }
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        handleConfirmClose();
+      }
     };
-    if (isOpen) document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, handleConfirmClose]);
+
+  // Закрытие по Escape с подтверждением
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showTagSelector) {
+          setShowTagSelector(false);
+        } else {
+          handleConfirmClose();
+        }
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showTagSelector, handleConfirmClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +205,7 @@ const TaskModal: React.FC<Props> = ({
 
   const handleCreateTag = async () => {
     const text = newTagText.trim();
-    if (text.length < 2 || text.length > 29) return;
+    if (!text || text.length > 255) return;
     setCreatingTag(true);
     try {
       await onCreateTag(text, newTagColor);
@@ -232,9 +246,9 @@ const TaskModal: React.FC<Props> = ({
           type="text"
           placeholder="Название тега"
           value={value}
-          onChange={(e) => onChange(e.target.value.slice(0, 29))}
+          onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          maxLength={29}
+          maxLength={255}
         />
         <label className="tag-color-input" title="Цвет">
           <input
