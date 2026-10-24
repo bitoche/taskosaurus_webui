@@ -1,0 +1,840 @@
+/* TaskModal.css */
+
+:root {
+  --modal-overlay-bg: rgba(0, 0, 0, 0.6);
+  --modal-bg: #ffffff;
+  --modal-border: #eef2f6;
+  --modal-title: #1e2a3a;
+  --modal-close: #64748b;
+  --modal-close-hover: #f1f5f9;
+  --modal-close-hover-text: #0f172a;
+  --modal-section-border: #f0f4f9;
+  --section-title: #334155;
+  --label-color: #475569;
+  --input-border: #e2e8f0;
+  --input-bg: #fff;
+  --input-focus-border: #3b82f6;
+  --input-focus-shadow: rgba(59, 130, 246, 0.1);
+  --required-color: #ef4444;
+  --icon-color: #94a3b8;
+  --tag-bg: #f1f5f9;
+  --tag-color: #000000;
+  --priority-color: #000000;
+  --add-tag-border: #cbd5e1;
+  --add-tag-color: #3b82f6;
+  --add-tag-hover: #f8fafc;
+  --tag-dropdown-bg: white;
+  --tag-dropdown-border: #e2e8f0;
+  --tag-dropdown-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  --tag-option-hover: #f1f5f9;
+  --empty-hint: #94a3b8;
+  --comment-bg: #f8fafc;
+  --comment-text: #1e293b;
+  --comment-meta: #64748b;
+  --delete-btn: #94a3b8;
+  --delete-btn-hover: #ef4444;
+  --delete-btn-hover-bg: #f1f5f9;
+  --modal-footer-bg: #fefefe;
+  --btn-secondary-bg: #f1f5f9;
+  --btn-secondary-text: #334155;
+  --btn-secondary-hover: #e2e8f0;
+  --btn-danger-bg: #fee2e2;
+  --btn-danger-text: #dc2626;
+  --btn-danger-hover: #fecaca;
+}
+
+.dark {
+  --modal-overlay-bg: rgba(0, 0, 0, 0.7);
+  --modal-bg: #2d2d44;
+  --modal-border: #3a3a55;
+  --modal-title: #e0e0e0;
+  --modal-close: #808090;
+  --modal-close-hover: #3a3a55;
+  --modal-close-hover-text: #e0e0e0;
+  --modal-section-border: #3a3a55;
+  --section-title: #b0b0c0;
+  --label-color: #9090a0;
+  --input-border: #4a4a6a;
+  --input-bg: #3a3a55;
+  --input-focus-border: #5b7cfa;
+  --input-focus-shadow: rgba(91, 124, 250, 0.2);
+  --required-color: #ef4444;
+  --icon-color: #606070;
+  --tag-bg: #3a3a55;
+  --tag-color: #000000;
+  --priority-color: #b0b0c0;
+  --add-tag-border: #4a4a6a;
+  --add-tag-color: #5b7cfa;
+  --add-tag-hover: #3a3a55;
+  --tag-dropdown-bg: #2d2d44;
+  --tag-dropdown-border: #3a3a55;
+  --tag-dropdown-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  --tag-option-hover: #3a3a55;
+  --empty-hint: #606070;
+  --comment-bg: #252538;
+  --comment-text: #e0e0e0;
+  --comment-meta: #808090;
+  --delete-btn: #606070;
+  --delete-btn-hover: #ef4444;
+  --delete-btn-hover-bg: #3a3a55;
+  --modal-footer-bg: #252538;
+  --btn-secondary-bg: #3a3a55;
+  --btn-secondary-text: #e0e0e0;
+  --btn-secondary-hover: #4a4a6a;
+  --btn-danger-bg: #7c1a1a;
+  --btn-danger-text: #ffb3b3;
+  --btn-danger-hover: #9c1a1a;
+}
+
+/* Оверлей */
+.task-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--modal-overlay-bg);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+  transition: background 0.3s ease;
+  /* Невидимый край 20px со всех сторон — клик по нему считается кликом по модалке */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Контейнер модалки */
+.task-modal-container {
+  background: var(--modal-bg);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease;
+  transition: background 0.3s ease;
+  overflow: hidden;
+  /* Компенсируем padding оверлея — визуально модалка на том же месте, но область клика шире */
+  margin: -20px;
+  box-sizing: border-box;
+}
+
+/* Хедер */
+.task-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--modal-border);
+}
+
+.task-modal-header h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--modal-title);
+  margin: 0;
+}
+
+.task-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--modal-close);
+  transition: all 0.2s;
+}
+
+.task-modal-close:hover {
+  background: var(--modal-close-hover);
+  color: var(--modal-close-hover-text);
+}
+
+/* Форма */
+.task-modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.task-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  scrollbar-width: thin;
+}
+.task-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.task-modal-body::-webkit-scrollbar-track {
+  background: var(--bg-scrollbar-track);
+  border-radius: 10px;
+}
+.task-modal-body::-webkit-scrollbar-thumb {
+  background: var(--bg-scrollbar-thumb);
+  border-radius: 10px;
+}
+.task-modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-scrollbar-thumb-hover);
+}
+
+/* Секции */
+.form-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--modal-section-border);
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--section-title);
+  margin-bottom: 0.85rem;
+  font-size: 0.95rem;
+}
+
+/* Группы полей */
+.form-group {
+  margin-bottom: 0.75rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--label-color);
+  margin-bottom: 4px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  background: var(--input-bg);
+  color: var(--modal-title);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow);
+}
+
+.form-group textarea {
+  resize: none;
+  height: 80px;
+  overflow-y: auto;
+}
+
+.required {
+  color: var(--required-color);
+  margin-left: 2px;
+}
+
+/* Две колонки */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon svg {
+  position: absolute;
+  left: 12px;
+  color: var(--icon-color);
+  pointer-events: none;
+}
+
+.input-icon input {
+  padding-left: 36px !important;
+}
+
+/* Блок тегов */
+.tags-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.current-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 40px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--tag-color);
+  background: var(--tag-bg);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-selector-wrapper {
+  position: relative;
+}
+
+.add-tag-btn {
+  background: none;
+  border: 1px dashed var(--add-tag-border);
+  padding: 6px 12px;
+  border-radius: 40px;
+  font-size: 0.8rem;
+  color: var(--add-tag-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.add-tag-btn:hover {
+  background: var(--add-tag-hover);
+  border-color: var(--add-tag-color);
+}
+
+.tag-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: var(--tag-dropdown-bg);
+  border: 1px solid var(--tag-dropdown-border);
+  border-radius: 16px;
+  box-shadow: var(--tag-dropdown-shadow);
+  z-index: 10;
+  padding: 8px;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.tag-list-select {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+.tag-list-select::-webkit-scrollbar {
+  width: 6px;
+}
+.tag-list-select::-webkit-scrollbar-track {
+  background: var(--bg-scrollbar-track);
+  border-radius: 10px;
+}
+.tag-list-select::-webkit-scrollbar-thumb {
+  background: var(--bg-scrollbar-thumb);
+  border-radius: 10px;
+}
+.tag-list-select::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-scrollbar-thumb-hover);
+}
+
+.tag-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--tag-color);
+  transition: background 0.3s ease;
+}
+
+.tag-option:hover {
+  background: var(--tag-option-hover);
+}
+
+.tag-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ==================== Форма редактирования/создания тега ==================== */
+
+.tag-editor-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--modal-border);
+  margin-top: 8px;
+}
+
+.tag-editor-form input[type="text"] {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--modal-title);
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.tag-editor-form input[type="text"]:focus {
+  border-color: var(--input-focus-border);
+}
+
+.tag-editor-form input[type="text"]::placeholder {
+  color: var(--empty-hint);
+}
+
+/* ==================== Инпут цвета ==================== */
+
+.tag-color-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+
+.tag-color-input:hover {
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 2px var(--input-focus-shadow);
+}
+
+.tag-color-input input[type="color"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.tag-color-swatch {
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  display: block;
+}
+
+/* ==================== Кнопки формы ==================== */
+
+.tag-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+  color: var(--empty-hint);
+}
+
+.tag-editor-btn:hover:not(:disabled) {
+  background: var(--btn-secondary-bg);
+}
+
+.tag-editor-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tag-editor-btn-save {
+  color: #22c55e;
+}
+
+.tag-editor-btn-save:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.tag-editor-btn-cancel {
+  color: var(--delete-btn);
+}
+
+.tag-editor-btn-cancel:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--delete-btn-hover);
+}
+
+.empty-hint, .no-tags-msg {
+  color: var(--empty-hint);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Блок комментариев */
+.comments-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comments-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.comments-list::-webkit-scrollbar {
+  width: 6px;
+}
+.comments-list::-webkit-scrollbar-track {
+  background: var(--bg-scrollbar-track);
+  border-radius: 10px;
+}
+.comments-list::-webkit-scrollbar-thumb {
+  background: var(--bg-scrollbar-thumb);
+  border-radius: 10px;
+}
+.comments-list::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-scrollbar-thumb-hover);
+}
+
+.comment-item {
+  background: var(--comment-bg);
+  border-radius: 16px;
+  padding: 10px 12px;
+  transition: background 0.3s ease;
+}
+
+.comment-text {
+  font-size: 0.85rem;
+  color: var(--comment-text);
+  word-break: break-word;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--comment-meta);
+}
+
+.delete-comment-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 20px;
+  color: var(--delete-btn);
+  transition: all 0.2s;
+}
+
+.delete-comment-btn:hover {
+  color: var(--delete-btn-hover);
+  background: var(--delete-btn-hover-bg);
+}
+
+.new-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.new-comment textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  resize: none;
+  height: 70px;
+  background: var(--input-bg);
+  color: var(--comment-text);
+}
+
+/* Стили для Markdown Editor - переопределение глобальных стилей */
+.markdown-editor .markdown-textarea {
+  width: 100% !important;
+  padding: 12px !important;
+  border: 1px solid var(--input-border) !important;
+  border-top: 0 !important;
+  /* border-left: 0 !important; */
+  /* border-right: 0 !important; */
+  border-radius: 0 0 12px 12px !important;
+  font-family: inherit !important;
+  font-size: 0.9rem !important;
+  resize: none !important;
+  background: var(--input-bg) !important;
+  color: var(--comment-text) !important;
+  line-height: 1.5 !important;
+  min-height: 80px !important;
+}
+
+.markdown-editor .markdown-textarea:focus {
+  outline: none !important;
+  border-bottom-color: var(--input-focus-border) !important;
+  box-shadow: none !important;
+}
+
+.send-comment-btn {
+  align-self: flex-end;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 40px;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.send-comment-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.send-comment-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Футер с кнопками */
+.task-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--modal-border);
+  background: var(--modal-footer-bg);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+  padding: 8px 20px;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+}
+
+.btn-secondary:hover {
+  background: var(--btn-secondary-hover);
+}
+
+.btn-danger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
+}
+
+.btn-danger:hover {
+  background: var(--btn-danger-hover);
+}
+
+.task-id-hint {
+  font-size: 0.75rem;
+  color: var(--empty-hint);
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== Кнопка "Показать больше" ==================== */
+
+.link-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.show-more-btn {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--icon-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.show-more-btn:hover {
+  background: var(--btn-secondary-bg);
+  color: var(--section-title);
+}
+
+.show-more-btn svg {
+  transition: transform 0.3s ease;
+}
+
+/* ==================== Расширяемая секция ==================== */
+
+.expandable-section {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.3s ease;
+  margin-top: 0;
+}
+
+.expandable-section.expanded {
+  max-height: 200px;
+  opacity: 1;
+  margin-top: 0.15rem;
+}
+
+.expandable-section .form-row {
+  margin-bottom: 0;
+}
+
+.expandable-section .form-group {
+  margin-bottom: 0;
+}
+
+/* ==================== Блок приоритетов ==================== */
+
+.priority-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.priority-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.priority-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 40px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--tag-bg);
+  color: var(--priority-color);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.priority-option:hover {
+  background: var(--tag-option-hover);
+}
+
+.priority-option.selected {
+  border-color: currentColor;
+  background: var(--bg-tag-filter-active);
+  color: white;
+}
+
+.priority-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-none-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+

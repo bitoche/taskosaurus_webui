@@ -1,0 +1,238 @@
+/* ==================== Менеджер приоритетов ==================== */
+
+.priority-manager {
+  background: var(--bg-tag-manager);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.priority-manager-title {
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ==================== Список приоритетов ==================== */
+
+.priority-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ==================== Плашка приоритета ==================== */
+
+.priority-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: default;
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  min-height: 28px;
+  min-width: 70px;
+  box-sizing: border-box;
+  line-height: 1;
+  border: 2px solid transparent;
+  background: var(--bg-element);
+  color: var(--text-primary);
+}
+
+.priority-item-add {
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.priority-item-add:hover {
+  border-color: var(--accent-color, #3b82f6);
+  color: var(--accent-color, #3b82f6);
+}
+
+.priority-item-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.priority-item-active {
+  font-weight: 600;
+}
+
+.priority-item-active .priority-action-btn {
+  color: white;
+}
+
+.priority-item-active .priority-action-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Затемнённый приоритет (когда активен фильтр по другому приоритету) */
+.priority-item-dimmed {
+  opacity: 0.4;
+  cursor: pointer;
+}
+
+.priority-item-dimmed:hover {
+  opacity: 0.7;
+}
+
+.priority-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-weight {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+/* Иконки действий */
+.priority-actions {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  align-items: center;
+  gap: 2px;
+  min-width: 24px;
+}
+
+.priority-item:hover .priority-actions {
+  display: inline-flex;
+}
+
+.priority-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(2px);
+  border-radius: 4px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s;
+  flex-shrink: 0;
+  flex-direction: column;
+}
+
+.priority-action-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.priority-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.priority-action-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* ==================== Inline-форма редактирования ==================== */
+
+.priority-item-editing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--bg-element);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  vertical-align: top;
+  pointer-events: auto;
+}
+
+.priority-item-editing input[type="text"] {
+  width: 80px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  outline: none;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.priority-item-editing input[type="text"]::placeholder {
+  color: var(--text-secondary);
+}
+
+.priority-item-editing input[type="text"]:focus {
+  background: var(--bg-element);
+  border: 1px solid var(--accent-color, #3b82f6);
+  border-radius: 8px;
+}
+
+.priority-weight-input {
+  width: 50px !important;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-family: inherit;
+  outline: none;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.priority-weight-input:focus {
+  border: 1px solid var(--accent-color, #3b82f6);
+  border-radius: 8px;
+}
+
+/* Инпут цвета в форме */
+.priority-color-swatch-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+  box-sizing: border-box;
+}
+
+.priority-color-swatch-btn input[type="color"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.priority-color-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+  box-sizing: border-box;
+}

@@ -1,0 +1,455 @@
+:root {
+  --task-list-bg: rgba(255, 255, 255, 0.7);
+  --task-list-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  --task-list-header: #1e2a3a;
+  --task-list-search-bg: white;
+  --task-list-search-border: #cbd5e1;
+  --task-list-border: #e2e8f0;
+  --task-list-hover-border: #cbd5e1;
+  --task-list-header-bg: #eef2f8;
+  --task-list-row-hover: #f1f5f9;
+  --task-list-row-completed: #effff3;
+  --task-list-link: #3b82f6;
+  --task-list-link-hover: #2563eb;
+  --task-list-btn: #4a5568;
+  --task-list-btn-hover: rgba(0, 0, 0, 0.05);
+  --task-list-btn-edit: #3182ce;
+  --task-list-btn-delete: #dc3545;
+  --task-list-btn-delete-bg: rgba(220, 53, 69, 0.1);
+  --task-list-status-completed: #10b981;
+  --task-list-status-incomplete: #9ca3af;
+  --task-list-no-tasks: #64748b;
+  --task-list-resizer: rgba(0, 0, 0, 0.2);
+  --task-list-resizer-active: #3b82f6;
+  --task-list-overdue-closed-bg: #ffc107;
+  --task-list-overdue-closed-text: #212529;
+}
+
+.dark {
+  --task-list-bg: rgba(40, 40, 60, 0.6);
+  --task-list-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  --task-list-header: #e0e0e0;
+  --task-list-search-bg: #3a3a55;
+  --task-list-search-border: #4a4a6a;
+  --task-list-border: #3a3a55;
+  --task-list-hover-border: #4a4a6a;
+  --task-list-header-bg: #3a3a55;
+  --task-list-row-hover: #3a3a55;
+  --task-list-row-completed: #1a3a2a;
+  --task-list-link: #5b7cfa;
+  --task-list-link-hover: #7c9cfa;
+  --task-list-btn: #9090a0;
+  --task-list-btn-hover: rgba(255, 255, 255, 0.05);
+  --task-list-btn-edit: #5b9cfa;
+  --task-list-btn-delete: #ff6b6b;
+  --task-list-btn-delete-bg: rgba(255, 107, 107, 0.1);
+  --task-list-status-completed: #10b981;
+  --task-list-status-incomplete: #606070;
+  --task-list-no-tasks: #808090;
+  --task-list-resizer: rgba(255, 255, 255, 0.2);
+  --task-list-resizer-active: #5b7cfa;
+  --task-list-overdue-closed-bg: #d4a006;
+  --task-list-overdue-closed-text: #1a1a1a;
+}
+
+.task-list-container {
+  margin-top: 2rem;
+  background: var(--task-list-bg);
+  backdrop-filter: blur(4px);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: var(--task-list-shadow);
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.task-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.task-list-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--task-list-header);
+  transition: color 0.3s ease;
+}
+
+.task-list-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--task-list-search-bg);
+  padding: 0.4rem 1rem;
+  border-radius: 40px;
+  border: 1px solid var(--task-list-search-border);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.task-list-search input {
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  width: 220px;
+  background: transparent;
+  color: var(--task-list-header);
+}
+
+.task-list-table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 400px;
+  scrollbar-width: thin;
+  width: 100%;
+}
+
+.task-list-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.task-list-table-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-scrollbar-track);
+  border-radius: 4px;
+}
+.task-list-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--bg-scrollbar-thumb);
+  border-radius: 4px;
+}
+.task-list-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-scrollbar-thumb-hover);
+}
+
+.task-list-table {
+  table-layout: fixed;
+  min-width: 100%;
+  width: auto;
+  border-collapse: collapse;
+}
+
+/* Высота строк увеличена */
+.task-list-table td,
+.task-list-table th {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--task-list-border);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--task-list-header);
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+.task-list-table td {
+  justify-items: center;
+}
+
+/* Визуальные разделители между столбцами — лёгкая вертикальная линия при наведении */
+.task-list-table td:not(:last-child),
+.task-list-table th:not(:last-child) {
+  border-right: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+.task-list-table tr:hover td:not(:last-child) {
+  border-right-color: var(--task-list-hover-border);
+}
+
+/* Заголовки */
+.task-list-table th {
+  position: relative;
+  background: var(--task-list-header-bg);
+  font-weight: 600;
+  user-select: none;
+  transition: background 0.3s ease;
+}
+
+.task-row:hover {
+  background: var(--task-list-row-hover);
+  transition: background 0.3s ease;
+}
+
+.task-row.completed-row {
+  opacity: 0.7;
+  background: var(--task-list-row-completed);
+}
+
+/* Колонка "Название" – убираем скачки, используем подсказку при наведении */
+.task-title-cell {
+  display: inline-flex;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+  align-items: center;
+}
+.task-id-place {
+  background-color: var(--today-card-bg);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+/* Колонки с датами — единый стиль */
+.task-date-cell,
+.task-created-cell,
+.task-closed-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Колонка ссылки – небольшая ширина, без ресайза */
+.task-link-cell {
+  text-align: center;
+  width: 50px;
+}
+.task-link-cell a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--task-list-link);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+.task-link-cell a:visited {
+  color: var(--task-list-link);
+}
+.task-link-cell a:hover {
+  color: var(--task-list-link-hover);
+}
+
+/* Колонка действий – фиксированная ширина, запрет ресайза, компактные кнопки */
+.task-actions-group {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  min-width: 100px;
+  max-width: 120px;
+}
+
+/* Точки тегов рядом со статусом */
+.task-status-tags {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.task-status-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.status-toggle-btn-list,
+.edit-btn-list,
+.delete-btn-list {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 20px;
+  transition: background 0.1s, color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--task-list-btn);
+}
+
+.status-toggle-btn-list:hover,
+.edit-btn-list:hover,
+.delete-btn-list:hover {
+  background: var(--task-list-btn-hover);
+}
+.edit-btn-list:hover {
+  color: var(--task-list-btn-edit);
+}
+.delete-btn-list:hover {
+  background: var(--task-list-btn-delete-bg);
+  color: var(--task-list-btn-delete);
+}
+
+.status-icon.completed {
+  color: var(--task-list-status-completed);
+  fill: var(--task-list-status-completed);
+}
+.status-icon.incomplete {
+  color: var(--task-list-status-incomplete);
+}
+
+/* Ячейка даты — компактный вертикальный layout */
+.task-date-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 28px;
+  justify-content: center;
+}
+
+/* Бейдж-дата */
+.date-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--task-list-border);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  cursor: default;
+  line-height: 1;
+  font-size: small;
+}
+
+.date-badge:hover {
+  background: var(--task-list-search-bg);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.date-badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1px;
+  color: #dc3545;
+}
+
+.date-badge-icon-closed {
+  color: var(--task-list-overdue-closed-bg);
+}
+
+.date-badge-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Просроченная дата */
+.date-badge-overdue {
+  background: rgba(220, 53, 69, 0.12);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.date-badge-overdue:hover {
+  background: rgba(220, 53, 69, 0.2);
+}
+
+/* Просрочка при закрытии */
+.date-badge-overdue-closed {
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.date-badge-overdue-closed:hover {
+  background: rgba(255, 193, 7, 0.25);
+}
+
+/* Заглушка для пустой даты */
+.date-placeholder {
+  color: var(--task-list-no-tasks);
+  font-style: italic;
+}
+
+/* Бейдж просрочки (оставляем для совместимости, но больше не используем) */
+.overdue-badge-list {
+  background: #dc3545;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Бейдж просрочки при закрытии (желтый) */
+.overdue-badge-closed {
+  background: var(--task-list-overdue-closed-bg);
+  color: var(--task-list-overdue-closed-text);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.no-tasks {
+  text-align: center;
+  padding: 2rem;
+  color: var(--task-list-no-tasks);
+  font-style: italic;
+  transition: color 0.3s ease;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  background: var(--task-list-header-bg);
+  z-index: 10;
+  transition: background 0.3s ease;
+}
+
+/* Индикатор сортировки */
+.sort-indicator {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+/* Ресайзеры */
+.resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  background: var(--task-list-resizer);
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.3s ease;
+}
+.resizer:hover,
+.resizer.isResizing {
+  opacity: 1;
+  background: var(--task-list-resizer-active);
+}
+
+.task-status-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==================== Приоритеты ==================== */
+
+.task-priority-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.priority-dot-small {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-none {
+  color: var(--task-list-no-tasks);
+  font-style: italic;
+}
+

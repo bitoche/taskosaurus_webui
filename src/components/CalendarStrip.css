@@ -1,0 +1,117 @@
+/* пустой, можно использовать глобальные стили, но для порядка */
+.calendar-strip {
+  scroll-behavior: auto !important;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.nav-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.task-highlight {
+  position: relative;
+  background: linear-gradient(135deg, #fff9e6 0%, #ffe6b3 100%);
+  transition: background 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease;
+  animation: gentlePulse 0.6s ease-in-out 1;
+}
+
+@keyframes gentlePulse {
+  0% { 
+    transform: scale(1); 
+    background: #fff9e6; 
+    box-shadow: 0 0 0 2px rgba(255,152,0,0.3); 
+  }
+  30% { 
+    transform: scale(1.03); 
+    background: #ffe6b3; 
+    box-shadow: 0 0 0 4px #ff9800, 0 6px 16px rgba(0,0,0,0.25); 
+  }
+  70% { 
+    transform: scale(1.03); 
+    background: #ffe6b3; 
+    box-shadow: 0 0 0 4px #ff9800, 0 6px 16px rgba(0,0,0,0.25); 
+  }
+  100% { 
+    transform: scale(1); 
+    background: #fff9e6; 
+    box-shadow: 0 0 0 2px rgba(255,152,0,0.3); 
+  }
+}
+
+.dark .task-highlight {
+  background: linear-gradient(135deg, #4a3a2a 0%, #5a4a3a 100%);
+}
+
+.load-more-card {
+  flex: 0 0 auto;
+  width: 240px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 32px;
+  box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.2);
+  transition: 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem;
+  gap: 0.5rem;
+  backdrop-filter: blur(4px);
+  border: 1px dashed #ff9800;
+  color: #ff9800;
+}
+
+.load-more-card:hover:not(.loading) {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #f57c00;
+  color: #f57c00;
+}
+
+.load-more-card.loading {
+  cursor: wait;
+  opacity: 0.7;
+  border-color: #ccc;
+  color: #aaa;
+}
+
+.load-more-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.load-more-text {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.spinner {
+  font-size: 2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.dark .load-more-card {
+  background: rgba(45, 45, 68, 0.8);
+  border-color: #ffb347;
+  color: #ffb347;
+}
+
+.dark .load-more-card:hover:not(.loading) {
+  background: rgba(45, 45, 68, 0.95);
+  border-color: #ffc966;
+  color: #ffc966;
+}

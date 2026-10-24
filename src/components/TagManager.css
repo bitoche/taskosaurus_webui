@@ -1,0 +1,206 @@
+/* ==================== Менеджер тегов ==================== */
+
+.tag-manager {
+  background: var(--bg-tag-manager);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tag-manager-title {
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ==================== Список тегов ==================== */
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ==================== Плашка тега ==================== */
+
+.task-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: default;
+  position: relative;
+  transition: background 0.2s ease;
+  min-height: 28px;
+  min-width: 70px;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.task-tag-add {
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.task-tag-add:hover {
+  border-color: var(--accent-color, #3b82f6);
+  color: var(--accent-color, #3b82f6);
+}
+
+.task-tag-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Активный тег */
+.task-tag-active {
+  color: white;
+}
+
+.task-tag-active .tag-action-btn {
+  color: white;
+}
+
+.task-tag-active .tag-action-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Затемнённый тег (когда активен фильтр по другому тегу) */
+.task-tag-dimmed {
+  background: var(--bg-tag-filter) !important;
+  opacity: 0.4;
+  cursor: pointer;
+}
+
+.task-tag-dimmed:hover {
+  opacity: 0.7;
+}
+
+/* Иконки действий */
+.tag-actions {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  align-items: center;
+  gap: 2px;
+  min-width: 24px;
+}
+
+.task-tag:hover .tag-actions {
+  display: inline-flex;
+}
+
+.tag-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(2px);
+  border-radius: 4px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s;
+  flex-shrink: 0;
+  flex-direction: column;
+}
+
+.tag-action-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.tag-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tag-action-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* ==================== Inline-форма редактирования ==================== */
+
+.task-tag-editing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--bg-element);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  vertical-align: top;
+  pointer-events: auto;
+}
+
+.task-tag-editing input[type="text"] {
+  width: 90px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  outline: none;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.task-tag-editing input[type="text"]::placeholder {
+  color: var(--text-secondary);
+}
+
+.task-tag-editing input[type="text"]:focus {
+  background: var(--bg-element);
+  border: 1px solid var(--accent-color, #3b82f6);
+  border-radius: 8px;
+}
+
+/* Инпут цвета в форме */
+.tag-color-swatch-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+  box-sizing: border-box;
+}
+
+.tag-color-swatch-btn input[type="color"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.tag-color-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+  box-sizing: border-box;
+}
+
