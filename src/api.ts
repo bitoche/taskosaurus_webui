@@ -146,21 +146,6 @@ export async function deleteTask(taskId: number): Promise<void> {
   await request<void>(`${API_BASE}/tasks/${taskId}`, { method: 'DELETE' });
 }
 
-export async function syncDownload(): Promise<void> {
-  await request<void>(`${API_BASE}/remote_db/sync_download`, { method: 'POST' });
-}
-
-export async function syncUpload(): Promise<void> {
-  await request<void>(`${API_BASE}/remote_db/sync_upload`, { method: 'POST' });
-}
-
-export async function checkRemoteUpdates(): Promise<boolean> {
-  const path = `${API_BASE}/remote_db/check_updates`;
-  const data = await request<{ updates: boolean }>(path);
-  console.log(`[API ←] ${path} updates: ${data?.updates}`);
-  return data?.updates === true;
-}
-
 export async function fetchTaskComments(taskId: number): Promise<TaskComment[]> {
   const path = `${API_BASE}/tasks/${taskId}/comments`;
   const comments = await request<TaskComment[]>(path);
