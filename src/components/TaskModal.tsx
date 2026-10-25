@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, TaskComment, TaskTag, TaskPriority } from '../types';
 import { fetchTaskComments, addTaskComment, deleteTaskComment } from '../api';
-import { X, Send, Trash2, Plus, Tag, MessageSquare, FileText, ExternalLink, Calendar, Check, Clock, ChevronDown, ChevronUp, Flag } from 'lucide-react';
+import { X, Send, Trash2, Plus, Tag, MessageSquare, FileText, ExternalLink, Calendar, Check, Clock, ChevronDown, ChevronUp, Flag, Loader2 } from 'lucide-react';
 import { MarkdownEditor, renderMarkdown } from './MarkdownEditor';
 import './TaskModal.css';
 
@@ -9,7 +9,7 @@ interface Props {
   isOpen: boolean;
   task?: Task;
   defaultDate?: string;
-  onSave: (taskData: Omit<Task, 'task_id'>) => Promise<void>;
+  onSave: (taskData: Omit<Task, 'task_id'>) => Promise<void> | void;
   onDelete: () => void;
   onClose: () => void;
   allTags: TaskTag[];
@@ -192,14 +192,14 @@ const TaskModal: React.FC<Props> = ({
     }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
+  const handleDeleteComment = (commentId: number) => {
     if (window.confirm('Удалить комментарий?')) {
-      try {
-        await deleteTaskComment(commentId);
-        if (task) setComments(await fetchTaskComments(task.task_id));
-      } catch (err) {
-        console.error(err);
-      }
+      const prevComments = comments;
+      setComments(prev => prev.filter(c => c.comment_id !== commentId));
+      deleteTaskComment(commentId).catch(err => {
+        console.error('Failed to delete comment', err);
+        setComments(prevComments);
+      });
     }
   };
 
@@ -517,7 +517,8 @@ const TaskModal: React.FC<Props> = ({
                       onClick={handleAddComment}
                       disabled={addingComment || !newCommentText.trim()}
                     >
-                      <Send size={14} /> Отправить
+                      {addingComment ? <Loader2 size={14} className="spin-loader" /> : <Send size={14} />}
+                      <span>Отправить</span>
                     </button>
                   </div>
                 </div>

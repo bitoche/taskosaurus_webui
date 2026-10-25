@@ -8,6 +8,7 @@ import {
   LogOut,
   Download,
   Upload,
+  Loader2,
 } from 'lucide-react';
 import {
   fetchUsersList,
@@ -185,8 +186,9 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
         {/* Body */}
         <div className="mgmt-modal-body">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-hint)' }}>
-              Загрузка пользователей...
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 0', gap: 10, color: 'var(--text-hint)' }}>
+              <Loader2 size={24} className="spin-loader" />
+              <span>Загрузка пользователей...</span>
             </div>
           ) : users.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-hint)' }}>

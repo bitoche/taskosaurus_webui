@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, User as UserIcon, KeyRound, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Lock, User as UserIcon, KeyRound, AlertCircle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { loginUser, registerWithInvite } from '../api';
 import { User } from '../types';
 import './AuthScreen.css';
@@ -159,8 +159,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
               disabled={loading}
               className="auth-submit-btn"
             >
-              {loading ? 'Создание аккаунта...' : 'Зарегистрироваться и войти'}
-              <ArrowRight size={16} />
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="spin-loader" />
+                  <span>Создание аккаунта...</span>
+                </>
+              ) : (
+                <>
+                  <span>Зарегистрироваться и войти</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
 
             <div style={{ textAlign: 'center', marginTop: 12 }}>
@@ -213,8 +222,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
               disabled={loading}
               className="auth-submit-btn"
             >
-              {loading ? 'Вход...' : 'Войти'}
-              <ArrowRight size={16} />
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="spin-loader" />
+                  <span>Вход...</span>
+                </>
+              ) : (
+                <>
+                  <span>Войти</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </form>
         )}

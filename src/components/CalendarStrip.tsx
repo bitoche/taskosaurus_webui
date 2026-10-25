@@ -11,6 +11,7 @@ import {
 import DayCard, { DayCardTask } from './DayCard';
 import { Task, TaskTag, TaskPriority } from '../types';
 import { getDaysInfo, getLocalWeekends } from '../holidays';
+import { Loader2 } from 'lucide-react';
 import './CalendarStrip.css';
 
 const INITIAL_DAYS_BEFORE = 7;
@@ -459,7 +460,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
             onClick={!loadingLeft ? handleLoadLeft : undefined}
           >
             {loadingLeft ? (
-              <div className="spinner">⏳</div>
+              <Loader2 size={20} className="spinner" />
             ) : (
               <>
                 <div className="load-more-icon">◀</div>
@@ -497,7 +498,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
             onClick={!loadingRight ? handleLoadRight : undefined}
           >
             {loadingRight ? (
-              <div className="spinner">⏳</div>
+              <Loader2 size={20} className="spinner" />
             ) : (
               <>
                 <div className="load-more-text">Загрузить позже</div>

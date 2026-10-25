@@ -17,7 +17,7 @@ import AuthScreen from './components/AuthScreen';
 import AdminInvitesModal from './components/AdminInvitesModal';
 import AdminUsersModal from './components/AdminUsersModal';
 import DataBackupModal from './components/DataBackupModal';
-import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, KeyRound, User as UserIcon, Users, ArrowUpDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, KeyRound, User as UserIcon, Users, ArrowUpDown, Loader2 } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
@@ -335,70 +335,111 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveTask = async (taskData: Omit<Task, 'task_id'>) => {
-    try {
-      if (modalState.task) {
-        const updateDto: UpdateTaskDTO = {
-          task_id: modalState.task.task_id,
-          title: taskData.title ?? undefined,
-          description: taskData.description ?? undefined,
-          link_to_taskmanager: taskData.link_to_taskmanager ?? undefined,
-          due_date: taskData.due_date ?? undefined,
-          closed_dttm: taskData.closed_dttm ?? undefined,
-          task_status: taskData.task_status ?? undefined,
-          task_priority_id: taskData.task_priority_id ?? undefined,
-        };
-        const updated = await updateTask(modalState.task.task_id, updateDto);
-        setTasks(prev => prev.map(t => (t.task_id === modalState.task!.task_id ? { ...t, ...taskData, ...updated } : t)));
-        setModalState({ isOpen: false });
-      } else {
-        const createDto: CreateTaskDTO = {
-          title: taskData.title,
-          description: taskData.description ?? null,
-          link_to_taskmanager: taskData.link_to_taskmanager ?? null,
-          due_date: taskData.due_date ?? undefined,
-          task_status: taskData.task_status ?? null,
-          task_priority_id: taskData.task_priority_id ?? null,
-        };
-        await createTask(createDto);
-        const today = new Date();
-        const from = new Date(today);
-        from.setDate(today.getDate() - 30);
-        const to = new Date(today);
-        to.setDate(today.getDate() + 30);
-        await loadTasksForRange(formatLocalDate(from), formatLocalDate(to));
+  const handleSaveTask = (taskData: Omit<Task, 'task_id'>) => {
+    if (modalState.task) {
+      // Редактирование: моментально закрываем модалку и обновляем локальный стейт
+      const taskId = modalState.task.task_id;
+      const previousTask = tasks.find(t => t.task_id === taskId);
+      const updateDto: UpdateTaskDTO = {
+        task_id: taskId,
+        title: taskData.title ?? undefined,
+        description: taskData.description ?? undefined,
+        link_to_taskmanager: taskData.link_to_taskmanager ?? undefined,
+        due_date: taskData.due_date ?? undefined,
+        closed_dttm: taskData.closed_dttm ?? undefined,
+        task_status: taskData.task_status ?? undefined,
+        task_priority_id: taskData.task_priority_id ?? undefined,
+      };
+
+      setModalState({ isOpen: false });
+      setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, ...taskData } : t)));
+
+      updateTask(taskId, updateDto)
+        .then(updated => {
+          setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, ...taskData, ...updated } : t)));
+        })
+        .catch((err: any) => {
+          console.error('Failed to update task', err);
+          if (previousTask) {
+            setTasks(prev => prev.map(t => (t.task_id === taskId ? previousTask : t)));
+          }
+          addToast(`error-task-save-${taskId}`, {
+            type: 'error',
+            message: `Ошибка сохранения задачи: ${err?.message || err}`,
+          });
+        });
+    } else {
+      // Создание: моментально добавляем задачу с временным отрицательным id
+      // shortcut: temporary negative ID until server confirms, sufficient for single user session
+      const tempId = -Date.now();
+      const optimisticTask: Task = {
+        task_id: tempId,
+        title: taskData.title,
+        description: taskData.description ?? null,
+        link_to_taskmanager: taskData.link_to_taskmanager ?? null,
+        due_date: taskData.due_date ?? null,
+        task_status: taskData.task_status ?? 1,
+        closed_dttm: taskData.closed_dttm ?? null,
+        task_priority_id: taskData.task_priority_id ?? null,
+        created_at: new Date().toISOString(),
+      };
+
+      setModalState({ isOpen: false });
+      setTasks(prev => [...prev, optimisticTask]);
+
+      const createDto: CreateTaskDTO = {
+        title: taskData.title,
+        description: taskData.description ?? null,
+        link_to_taskmanager: taskData.link_to_taskmanager ?? null,
+        due_date: taskData.due_date ?? undefined,
+        task_status: taskData.task_status ?? null,
+        task_priority_id: taskData.task_priority_id ?? null,
+      };
+
+      createTask(createDto)
+        .then(created => {
+          setTasks(prev => prev.map(t => (t.task_id === tempId ? { ...t, ...created } : t)));
+        })
+        .catch((err: any) => {
+          console.error('Failed to create task', err);
+          setTasks(prev => prev.filter(t => t.task_id !== tempId));
+          addToast(`error-task-create-${tempId}`, {
+            type: 'error',
+            message: `Ошибка создания задачи "${taskData.title}": ${err?.message || err}`,
+          });
+        });
+    }
+  };
+
+  const handleDeleteTask = (taskId: number) => {
+    if (window.confirm('Удалить задачу?')) {
+      const taskToDelete = tasks.find(t => t.task_id === taskId);
+      if (modalState.task?.task_id === taskId) {
         setModalState({ isOpen: false });
       }
-    } catch (err: any) {
-      console.error('Failed to save task', err);
-      addToast('error-task-save', {
-        type: 'error',
-        message: `Ошибка сохранения задачи: ${err?.message || err}`,
+      // Моментально убираем из интерфейса
+      setTasks(prev => prev.filter(t => t.task_id !== taskId));
+
+      deleteTask(taskId).catch((err: any) => {
+        console.error('Failed to delete task', err);
+        if (taskToDelete) {
+          setTasks(prev => [...prev, taskToDelete]);
+        }
+        addToast(`error-task-delete-${taskId}`, {
+          type: 'error',
+          message: `Ошибка удаления задачи: ${err?.message || err}`,
+        });
       });
     }
   };
 
-  const handleDeleteTask = async (taskId: number) => {
-    if (window.confirm('Удалить задачу?')) {
-      try {
-        await deleteTask(taskId);
-        setTasks(prev => prev.filter(t => t.task_id !== taskId));
-        if (modalState.task?.task_id === taskId) {
-          setModalState({ isOpen: false });
-        }
-      } catch (err: any) {
-        console.error('Failed to delete task', err);
-        addToast('error-task-delete', {
-          type: 'error',
-          message: `Ошибка удаления задачи: ${err?.message || err}`,
-        });
-      }
-    }
-  };
-
-  const handleMoveTask = async (taskId: number, newDueDate: string) => {
+  const handleMoveTask = (taskId: number, newDueDate: string) => {
     const taskToUpdate = tasks.find(t => t.task_id === taskId);
     if (!taskToUpdate) return;
+    const oldDueDate = taskToUpdate.due_date;
+    // Моментально обновляем положение карточки
+    setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: newDueDate } : t)));
+
     const updateDto: UpdateTaskDTO = {
       task_id: taskId,
       title: taskToUpdate.title,
@@ -408,21 +449,29 @@ const App: React.FC = () => {
       task_status: taskToUpdate.task_status,
       task_priority_id: taskToUpdate.task_priority_id ?? null,
     };
-    try {
-      await updateTask(taskId, updateDto);
-      setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: newDueDate } : t)));
-    } catch (err: any) {
+
+    updateTask(taskId, updateDto).catch((err: any) => {
       console.error('Failed to move task', err);
-      addToast('error-task-move', {
+      setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: oldDueDate } : t)));
+      addToast(`error-task-move-${taskId}`, {
         type: 'error',
         message: `Ошибка переноса задачи: ${err?.message || err}`,
       });
-    }
+    });
   };
 
-  const handleToggleStatus = async (taskId: number, newStatus: number) => {
+  const handleToggleStatus = (taskId: number, newStatus: number) => {
     const taskToUpdate = tasks.find(t => t.task_id === taskId);
     if (!taskToUpdate) return;
+    const oldStatus = taskToUpdate.task_status;
+    const oldClosedDttm = taskToUpdate.closed_dttm;
+    const newClosedDttm = newStatus === 2 ? new Date().toISOString() : null;
+
+    // Моментально переключаем статус выполнения
+    setTasks(prev =>
+      prev.map(t => (t.task_id === taskId ? { ...t, task_status: newStatus, closed_dttm: newClosedDttm } : t))
+    );
+
     const updateDto: UpdateTaskDTO = {
       task_id: taskId,
       title: taskToUpdate.title,
@@ -430,66 +479,76 @@ const App: React.FC = () => {
       link_to_taskmanager: taskToUpdate.link_to_taskmanager,
       due_date: taskToUpdate.due_date,
       task_status: newStatus,
+      closed_dttm: newClosedDttm,
       task_priority_id: taskToUpdate.task_priority_id ?? null,
     };
-    try {
-      await updateTask(taskId, updateDto);
-      setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, task_status: newStatus } : t)));
-    } catch (err: any) {
+
+    updateTask(taskId, updateDto).catch((err: any) => {
       console.error('Failed to toggle status', err);
-      addToast('error-task-status', {
+      setTasks(prev =>
+        prev.map(t => (t.task_id === taskId ? { ...t, task_status: oldStatus, closed_dttm: oldClosedDttm } : t))
+      );
+      addToast(`error-task-status-${taskId}`, {
         type: 'error',
         message: `Ошибка изменения статуса: ${err?.message || err}`,
       });
-    }
+    });
   };
 
   const closeModal = () => setModalState({ isOpen: false });
 
-  const refreshTagsForTask = useCallback(async (taskId: number) => {
-    try {
-      const assignments = await fetchTaskTagsXTask();
-      const tags = await fetchAllTags();
-      const taskTags = assignments
-        .filter(a => a.task_id === taskId)
-        .map(a => tags.find(t => t.task_tag_id === a.task_tag_id))
-        .filter((t): t is TaskTag => t !== undefined);
-      setTaskTagsMap(prev => new Map(prev).set(taskId, taskTags));
-    } catch (err: any) {
-      console.error('Failed to refresh tags for task', err);
-      addToast('error-refresh-tags', {
-        type: 'error',
-        message: `Ошибка обновления тегов задачи: ${err?.message || err}`,
-      });
-    }
-  }, [addToast]);
-
-  const handleAssignTag = useCallback(async (tagId: number) => {
+  const handleAssignTag = useCallback((tagId: number) => {
     if (!modalState.task) return;
-    try {
-      await assignTagToTask(tagId, modalState.task.task_id);
-      await refreshTagsForTask(modalState.task.task_id);
-    } catch (err: any) {
+    const taskId = modalState.task.task_id;
+    const tag = allTags.find(t => t.task_tag_id === tagId);
+    if (!tag) return;
+
+    // Моментально добавляем тег в локальную мапу
+    setTaskTagsMap(prev => {
+      const next = new Map(prev);
+      const cur = next.get(taskId) || [];
+      if (!cur.some(t => t.task_tag_id === tagId)) {
+        next.set(taskId, [...cur, tag]);
+      }
+      return next;
+    });
+
+    assignTagToTask(tagId, taskId).catch((err: any) => {
       console.error('Failed to assign tag', err);
-      addToast('error-tag-assign', {
+      // Откат при ошибке
+      setTaskTagsMap(prev => {
+        const next = new Map(prev);
+        const cur = next.get(taskId) || [];
+        next.set(taskId, cur.filter(t => t.task_tag_id !== tagId));
+        return next;
+      });
+      addToast(`error-tag-assign-${tagId}`, {
         type: 'error',
         message: `Ошибка назначения тега: ${err?.message || err}`,
       });
-    }
-  }, [modalState.task, refreshTagsForTask, addToast]);
+    });
+  }, [modalState.task, allTags, addToast]);
 
-  const handleRemoveTagFromTask = useCallback(async (taskId: number, tagId: number) => {
-    try {
-      await unassignTagFromTask(tagId, taskId);
-      await refreshTagsForTask(taskId);
-    } catch (err: any) {
+  const handleRemoveTagFromTask = useCallback((taskId: number, tagId: number) => {
+    const prevTags = taskTagsMap.get(taskId) || [];
+    // Моментально отвязываем тег
+    setTaskTagsMap(prev => {
+      const next = new Map(prev);
+      const cur = next.get(taskId) || [];
+      next.set(taskId, cur.filter(t => t.task_tag_id !== tagId));
+      return next;
+    });
+
+    unassignTagFromTask(tagId, taskId).catch((err: any) => {
       console.error('Failed to remove tag from task', err);
-      addToast('error-tag-remove', {
+      // Откат при ошибке
+      setTaskTagsMap(prev => new Map(prev).set(taskId, prevTags));
+      addToast(`error-tag-remove-${tagId}`, {
         type: 'error',
         message: `Ошибка отвязки тега: ${err?.message || err}`,
       });
-    }
-  }, [refreshTagsForTask, addToast]);
+    });
+  }, [taskTagsMap, addToast]);
 
   const handleCreateTag = useCallback(async (tagText: string, tagColor: string) => {
     try {
@@ -518,17 +577,21 @@ const App: React.FC = () => {
   }, [loadTagsData, addToast]);
 
   const handleDeleteTagGlobally = useCallback(async (tagId: number) => {
+    const prevTags = allTags;
+    // Моментально убираем из списка тегов
+    setAllTags(prev => prev.filter(t => t.task_tag_id !== tagId));
     try {
       await deleteTagGlobally(tagId);
       await loadTagsData();
     } catch (err: any) {
+      setAllTags(prevTags);
       console.error('Failed to delete tag globally', err);
       addToast('error-tag-delete', {
         type: 'error',
         message: `Ошибка удаления тега: ${err?.message || err}`,
       });
     }
-  }, [loadTagsData, addToast]);
+  }, [allTags, loadTagsData, addToast]);
 
   const handleCreatePriority = useCallback(async (name: string, color: string, weight: number) => {
     try {
@@ -557,22 +620,27 @@ const App: React.FC = () => {
   }, [loadPrioritiesData, addToast]);
 
   const handleDeletePriority = useCallback(async (priorityId: number) => {
+    const prevPriorities = allPriorities;
+    // Моментально убираем из списка приоритетов
+    setAllPriorities(prev => prev.filter(p => p.priority_id !== priorityId));
     try {
       await deletePriority(priorityId);
       await loadPrioritiesData();
     } catch (err: any) {
+      setAllPriorities(prevPriorities);
       console.error('Failed to delete priority', err);
       addToast('error-priority-delete', {
         type: 'error',
         message: `Ошибка удаления приоритета: ${err?.message || err}`,
       });
     }
-  }, [loadPrioritiesData, addToast]);
+  }, [allPriorities, loadPrioritiesData, addToast]);
 
   if (authLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontSize: '14px', color: '#6b7280' }}>
-        Проверка авторизации...
+      <div className="auth-loading-screen">
+        <Loader2 className="spin-loader" size={32} />
+        <span className="auth-loading-text">Проверка авторизации...</span>
       </div>
     );
   }
@@ -587,7 +655,14 @@ const App: React.FC = () => {
     );
   }
 
-  if (loading) return <div className="calendar-main">Загрузка...</div>;
+  if (loading) {
+    return (
+      <div className="calendar-loading-screen">
+        <Loader2 className="spin-loader" size={36} />
+        <span className="calendar-loading-text">Загрузка задач...</span>
+      </div>
+    );
+  }
 
   const filteredTasks = filterTagId || filterPriorityId
     ? tasks.filter(task => {

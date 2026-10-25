@@ -14,7 +14,8 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  Code2
+  Code2,
+  Loader2
 } from 'lucide-react';
 import './SqlQueryModal.css';
 
@@ -359,8 +360,8 @@ const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelect
               disabled={loading || !query.trim()}
               title="Выполнить запрос (Ctrl+Enter)"
             >
-              <Play size={16} fill="currentColor" />
-              <span>{loading ? 'Выполнение...' : 'Выполнить запрос'}</span>
+              {loading ? <Loader2 size={16} className="spin-loader" /> : <Play size={16} fill="currentColor" />}
+              <span>{loading ? 'Выполнение запроса...' : 'Выполнить запрос'}</span>
             </button>
             <span className="sql-shortcut-hint">или нажмите <kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
           </div>

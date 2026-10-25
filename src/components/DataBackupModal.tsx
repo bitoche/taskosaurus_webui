@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, ArrowUpDown, Download, Upload, FileText } from 'lucide-react';
+import { X, ArrowUpDown, Download, Upload, FileText, Loader2 } from 'lucide-react';
 import { exportMyData, importMyData } from '../api';
 import { ImportSummary } from '../types';
 import './ManagementModals.css';
@@ -121,7 +121,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
               disabled={exporting}
               className="mgmt-btn-primary"
             >
-              <Download size={14} />
+              {exporting ? <Loader2 size={14} className="spin-loader" /> : <Download size={14} />}
               {exporting ? 'Формирование файла...' : 'Скачать резервную копию JSON'}
             </button>
           </div>
@@ -159,7 +159,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
                   className="mgmt-btn-success"
                   style={{ height: 30, padding: '0 10px', fontSize: 12 }}
                 >
-                  <Upload size={12} />
+                  {importing ? <Loader2 size={12} className="spin-loader" /> : <Upload size={12} />}
                   {importing ? 'Импорт...' : 'Применить'}
                 </button>
               </div>

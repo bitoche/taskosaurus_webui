@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, KeyRound, Copy, Check, Plus, Clock, ShieldAlert, Trash2 } from 'lucide-react';
+import { X, KeyRound, Copy, Check, Plus, Clock, ShieldAlert, Trash2, Loader2 } from 'lucide-react';
 import { createInviteToken, fetchActiveInvites, deleteInviteToken } from '../api';
 import { InviteToken } from '../types';
 import './ManagementModals.css';
@@ -137,7 +137,7 @@ export const AdminInvitesModal: React.FC<AdminInvitesModalProps> = ({ isOpen, on
                 disabled={creating}
                 className="mgmt-btn-primary"
               >
-                <Plus size={16} />
+                {creating ? <Loader2 size={16} className="spin-loader" /> : <Plus size={16} />}
                 <span>{creating ? 'Создание...' : 'Создать'}</span>
               </button>
             </div>
@@ -171,8 +171,9 @@ export const AdminInvitesModal: React.FC<AdminInvitesModalProps> = ({ isOpen, on
             </h3>
 
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 13, color: 'var(--text-hint)' }}>
-                Загрузка...
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 0', gap: 8, fontSize: 13, color: 'var(--text-hint)' }}>
+                <Loader2 size={20} className="spin-loader" />
+                <span>Загрузка...</span>
               </div>
             ) : invites.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 13, color: 'var(--text-hint)', border: '1px dashed var(--border-color)', borderRadius: 12 }}>
