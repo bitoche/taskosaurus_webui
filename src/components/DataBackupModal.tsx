@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, ArrowUpDown, Download, Upload, FileText } from 'lucide-react';
 import { exportMyData, importMyData } from '../api';
 import { ImportSummary } from '../types';
+import './ManagementModals.css';
 
 interface DataBackupModalProps {
   isOpen: boolean;
@@ -78,110 +79,104 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        
+    <div className="mgmt-modal-overlay">
+      <div className="mgmt-modal-card">
         {/* Заголовок */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-              <ArrowUpDown className="w-5 h-5" />
+        <div className="mgmt-modal-header">
+          <div className="mgmt-modal-title-group">
+            <div className="mgmt-modal-icon-badge">
+              <ArrowUpDown size={20} />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Экспорт и импорт данных</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <h2 className="mgmt-modal-title">Экспорт и импорт данных</h2>
+              <p className="mgmt-modal-subtitle">
                 Резервное копирование и перенос ваших задач
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            className="mgmt-modal-close-btn"
+            title="Закрыть"
           >
-            <X className="w-5 h-5" />
+            <X size={18} />
           </button>
         </div>
 
         {/* Тело */}
-        <div className="p-6 space-y-6 overflow-y-auto">
-          
+        <div className="mgmt-modal-body">
           {/* Секция экспорта */}
-          <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                  <Download className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  Экспорт данных (резервная копия)
-                </h3>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                  Скачать все ваши задачи, описания, теги, комментарии и приоритеты в одном JSON-файле.
-                </p>
-              </div>
-            </div>
+          <div className="mgmt-section-box">
+            <h3 className="mgmt-section-title">
+              <Download size={16} color="#4f46e5" />
+              Экспорт данных (резервная копия)
+            </h3>
+            <p className="mgmt-section-desc">
+              Скачать все ваши задачи, описания, теги, комментарии и приоритеты в одном JSON-файле.
+            </p>
 
             <button
               type="button"
               onClick={handleExport}
               disabled={exporting}
-              className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+              className="mgmt-btn-primary"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download size={14} />
               {exporting ? 'Формирование файла...' : 'Скачать резервную копию JSON'}
             </button>
           </div>
 
           {/* Секция импорта */}
-          <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 space-y-3">
-            <div>
-              <h3 className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Импорт данных из файла
-              </h3>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                Восстановите или добавьте задачи из ранее сохраненного файла JSON. Теги и приоритеты создадутся автоматически.
-              </p>
-            </div>
+          <div className="mgmt-section-box">
+            <h3 className="mgmt-section-title">
+              <Upload size={16} color="#10b981" />
+              Импорт данных из файла
+            </h3>
+            <p className="mgmt-section-desc">
+              Восстановите или добавьте задачи из сохраненного ранее JSON. Теги и приоритеты создадутся автоматически.
+            </p>
 
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleFileSelect}
               accept=".json,application/json"
-              className="block w-full text-xs text-gray-500 dark:text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-100 dark:file:bg-gray-800 file:text-gray-700 dark:file:text-gray-300 hover:file:bg-gray-200 dark:hover:file:bg-gray-700 cursor-pointer"
+              className="mgmt-file-input"
             />
 
             {selectedFile && (
-              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs flex items-center justify-between">
-                <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 truncate">
-                  <FileText className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">{selectedFile.name}</span>
+              <div className="mgmt-file-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                  <FileText size={16} color="#059669" />
+                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    {selectedFile.name}
+                  </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleImport}
                   disabled={importing}
-                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium cursor-pointer transition-colors disabled:opacity-50 flex items-center gap-1"
+                  className="mgmt-btn-success"
+                  style={{ height: 30, padding: '0 10px', fontSize: 12 }}
                 >
-                  <Upload className="w-3 h-3" />
+                  <Upload size={12} />
                   {importing ? 'Импорт...' : 'Применить'}
                 </button>
               </div>
             )}
           </div>
-
         </div>
 
         {/* Футер */}
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/60 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+        <div className="mgmt-modal-footer">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-xs font-medium cursor-pointer transition-colors"
+            className="mgmt-btn-secondary"
           >
             Закрыть
           </button>
         </div>
-
       </div>
     </div>
   );
