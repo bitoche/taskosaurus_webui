@@ -105,6 +105,18 @@ export interface User {
   created_at: string;
 }
 
+export interface UserAdmin extends User {
+  token_version: number;
+  tasks_count: number;
+}
+
+export interface ImportSummary {
+  tasks_imported: number;
+  priorities_imported: number;
+  tags_imported: number;
+  comments_imported: number;
+}
+
 export interface InviteToken {
   token: string;
   created_by_user_id: number;

@@ -15,7 +15,9 @@ import TaskList from './components/TaskList';
 import SqlQueryModal from './components/SqlQueryModal';
 import AuthScreen from './components/AuthScreen';
 import AdminInvitesModal from './components/AdminInvitesModal';
-import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, KeyRound, User as UserIcon } from 'lucide-react';
+import AdminUsersModal from './components/AdminUsersModal';
+import DataBackupModal from './components/DataBackupModal';
+import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, KeyRound, User as UserIcon, Users, ArrowUpDown } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
@@ -23,6 +25,8 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isInvitesModalOpen, setIsInvitesModalOpen] = useState(false);
+  const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   const calendarRef = useRef<CalendarStripRef>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -591,15 +595,34 @@ const App: React.FC = () => {
             </div>
 
             {currentUser.role === 'admin' && (
-              <button
-                className="nav-btn"
-                onClick={() => setIsInvitesModalOpen(true)}
-                title="Инвайты для регистрации"
-                style={{ marginRight: 4 }}
-              >
-                <KeyRound size={18} />
-              </button>
+              <>
+                <button
+                  className="nav-btn"
+                  onClick={() => setIsUsersModalOpen(true)}
+                  title="Управление пользователями и сессиями"
+                  style={{ marginRight: 4 }}
+                >
+                  <Users size={18} />
+                </button>
+                <button
+                  className="nav-btn"
+                  onClick={() => setIsInvitesModalOpen(true)}
+                  title="Инвайты для регистрации"
+                  style={{ marginRight: 4 }}
+                >
+                  <KeyRound size={18} />
+                </button>
+              </>
             )}
+
+            <button
+              className="nav-btn"
+              onClick={() => setIsBackupModalOpen(true)}
+              title="Экспорт и импорт данных (JSON)"
+              style={{ marginRight: 4 }}
+            >
+              <ArrowUpDown size={18} />
+            </button>
 
             <button
               className="nav-btn"
@@ -708,9 +731,28 @@ const App: React.FC = () => {
       />
 
       {currentUser?.role === 'admin' && (
-        <AdminInvitesModal
-          isOpen={isInvitesModalOpen}
-          onClose={() => setIsInvitesModalOpen(false)}
+        <>
+          <AdminInvitesModal
+            isOpen={isInvitesModalOpen}
+            onClose={() => setIsInvitesModalOpen(false)}
+          />
+          <AdminUsersModal
+            isOpen={isUsersModalOpen}
+            onClose={() => setIsUsersModalOpen(false)}
+            currentAdminId={currentUser.user_id}
+            onNotify={(type, msg) => addToast(`admin-${Date.now()}`, { type, message: msg })}
+            onRefreshData={() => handleRefreshTasks(true)}
+          />
+        </>
+      )}
+
+      {currentUser && (
+        <DataBackupModal
+          isOpen={isBackupModalOpen}
+          onClose={() => setIsBackupModalOpen(false)}
+          username={currentUser.username}
+          onNotify={(type, msg) => addToast(`backup-${Date.now()}`, { type, message: msg })}
+          onRefreshData={() => handleRefreshTasks(true)}
         />
       )}
 

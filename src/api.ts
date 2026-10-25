@@ -10,7 +10,9 @@ import {
   UpdatePriorityDTO,
   SqlQueryResult,
   User,
+  UserAdmin,
   InviteToken,
+  ImportSummary,
 } from './types';
 
 const API_BASE = '/api';
@@ -310,5 +312,50 @@ export async function registerWithInvite(token: string, username: string, passwo
     body: JSON.stringify({ token, username, password }),
   });
 }
+
+// ── Управление пользователями (только для админа) ────────────────────────────
+
+export async function fetchUsersList(): Promise<UserAdmin[]> {
+  return request<UserAdmin[]>(`${API_BASE}/users`);
+}
+
+export async function deleteUser(userId: number): Promise<void> {
+  await request<void>(`${API_BASE}/users/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function revokeUserSessions(userId: number): Promise<{ message: string; token_version: number }> {
+  return request<{ message: string; token_version: number }>(`${API_BASE}/users/${userId}/revoke-sessions`, {
+    method: 'POST',
+  });
+}
+
+// ── Экспорт и Импорт данных ──────────────────────────────────────────────────
+
+export async function exportMyData(): Promise<any> {
+  return request<any>(`${API_BASE}/users/me/export`);
+}
+
+export async function importMyData(data: any): Promise<ImportSummary> {
+  return request<ImportSummary>(`${API_BASE}/users/me/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function exportUserDataByAdmin(userId: number): Promise<any> {
+  return request<any>(`${API_BASE}/users/${userId}/export`);
+}
+
+export async function importUserDataByAdmin(userId: number, data: any): Promise<ImportSummary> {
+  return request<ImportSummary>(`${API_BASE}/users/${userId}/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
 
 
