@@ -91,5 +91,6 @@ export interface SqlQueryResult {
   columns: string[];
   rows: Record<string, any>[];
   count: number;
+  has_more?: boolean;
 }
 

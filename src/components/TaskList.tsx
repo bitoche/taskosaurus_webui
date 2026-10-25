@@ -49,24 +49,41 @@ const TaskList: React.FC<Props> = ({ tasks, taskTagsMap, onTaskClick, onToggleSt
   const [columnResizeMode] = useState<ColumnResizeMode>('onChange');
 
   const data = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    // Текущий календарный день в UTC
+    const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+
     return tasks.map(task => {
       const isCompleted = task.task_status === 2;
       let overdue = 0;
-      if (task.due_date && !isCompleted) {
+
+      // Парсинг due_date (YYYY-MM-DD) в полночь UTC
+      let dueUtc: number | null = null;
+      if (task.due_date) {
         const parts = task.due_date.split('-');
-        const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        const diffDays = Math.ceil((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+        if (parts.length === 3) {
+          dueUtc = Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        }
+      }
+
+      if (dueUtc !== null && !isCompleted) {
+        const diffDays = Math.floor((todayUtc - dueUtc) / (1000 * 60 * 60 * 24));
         overdue = diffDays > 0 ? diffDays : 0;
       }
-      // Просрочка при закрытии: задача завершена, closed_dttm заполнено, считаем сколько дней прошло от due_date до закрытия
+
+      // Просрочка при закрытии: задача завершена, closed_dttm заполнено
       let overdueClosed = 0;
-      if (isCompleted && task.due_date && task.closed_dttm) {
-        const parts = task.due_date.split('-');
-        const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        const closed = new Date(task.closed_dttm);
-        const diffDays = Math.ceil((closed.getTime() - due.getTime()) / (1000 * 60 * 60 * 24))-1;
+      if (isCompleted && dueUtc !== null && task.closed_dttm) {
+        const closedStr = task.closed_dttm.endsWith('Z') || task.closed_dttm.includes('+')
+          ? task.closed_dttm
+          : task.closed_dttm + 'Z';
+        const closedDate = new Date(closedStr);
+        const closedUtc = Date.UTC(
+          closedDate.getUTCFullYear(),
+          closedDate.getUTCMonth(),
+          closedDate.getUTCDate()
+        );
+        const diffDays = Math.floor((closedUtc - dueUtc) / (1000 * 60 * 60 * 24));
         overdueClosed = diffDays > 0 ? diffDays : 0;
       }
       return { ...task, isCompleted, overdue, overdueClosed };

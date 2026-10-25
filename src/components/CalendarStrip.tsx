@@ -163,6 +163,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       onHolidaysLoadingChange?.(false);
     }).catch(err => {
       console.error('Failed to load holidays:', err);
+      setDaysOffMap(prev => new Map([...prev, ...getLocalWeekends(start, end)]));
       onHolidaysLoadingChange?.(false);
     });
 
@@ -218,6 +219,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       onHolidaysLoadingChange?.(false);
     }).catch(err => {
       console.error('Failed to load holidays:', err);
+      setDaysOffMap(prev => new Map([...prev, ...getLocalWeekends(newFirst, firstDate)]));
       onHolidaysLoadingChange?.(false);
     });
     
@@ -276,6 +278,7 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       onHolidaysLoadingChange?.(false);
     }).catch(err => {
       console.error('Failed to load holidays:', err);
+      setDaysOffMap(prev => new Map([...prev, ...getLocalWeekends(lastDate, newLast)]));
       onHolidaysLoadingChange?.(false);
     });
     

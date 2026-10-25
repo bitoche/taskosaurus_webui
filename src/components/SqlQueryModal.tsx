@@ -82,7 +82,7 @@ const SCHEMA_INFO: { table: string; description: string; columns: string[] }[] =
   {
     table: 'task_status',
     description: 'Справочник статусов (1 = Активна, 2 = Завершена)',
-    columns: ['status_id (1=Active, 2=Closed)']
+    columns: ['status_id', 'status_name']
   }
 ];
 
@@ -375,6 +375,11 @@ const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelect
               <div className="sql-results-toolbar">
                 <div className="sql-results-count">
                   Найдено записей: <strong>{result.count}</strong>
+                  {result.has_more && (
+                    <span className="sql-has-more-badge" style={{ marginLeft: 8, color: '#f59e0b', fontSize: '0.85em' }}>
+                      (показаны первые {result.count} строк, лимит выборки)
+                    </span>
+                  )}
                   {hasTaskIdColumn && (
                     <span className="sql-clickable-hint">
                       (кликните по строке с <code>task_id</code> для открытия задачи)

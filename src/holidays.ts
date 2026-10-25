@@ -29,6 +29,7 @@ export async function getDaysInfo(start: Date, end: Date): Promise<Map<string, b
     }
   } catch (error) {
     console.warn('Ошибка isdayoff interval:', error);
+    return getLocalWeekends(start, end);
   }
   
   return result;
