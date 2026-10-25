@@ -6,17 +6,24 @@ import {
   deleteTagGlobally, updateTag,
   fetchAllPriorities, createPriority, updatePriority, deletePriority,
   fetchTaskById,
+  fetchCurrentUser, logoutUser,
 } from './api';
-import { Task, CreateTaskDTO, UpdateTaskDTO, TaskTag, TaskPriority } from './types';
+import { Task, CreateTaskDTO, UpdateTaskDTO, TaskTag, TaskPriority, User } from './types';
 import CalendarStrip, { CalendarStripRef } from './components/CalendarStrip';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import SqlQueryModal from './components/SqlQueryModal';
-import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X } from 'lucide-react';
+import AuthScreen from './components/AuthScreen';
+import AdminInvitesModal from './components/AdminInvitesModal';
+import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, KeyRound, User as UserIcon } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
 const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isInvitesModalOpen, setIsInvitesModalOpen] = useState(false);
+
   const calendarRef = useRef<CalendarStripRef>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +32,26 @@ const App: React.FC = () => {
     isOpen: false,
   });
   const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
+
+  // Проверка сессии пользователя при старте
+  useEffect(() => {
+    let isMounted = true;
+    fetchCurrentUser()
+      .then(user => {
+        if (isMounted) {
+          setCurrentUser(user);
+          setAuthLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCurrentUser(null);
+          setAuthLoading(false);
+          setLoading(false);
+        }
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   // === Темная тема ===
   const [isDark, setIsDark] = useState(() => {
@@ -501,6 +528,27 @@ const App: React.FC = () => {
     }
   }, [loadPrioritiesData, addToast]);
 
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontSize: '14px', color: '#6b7280' }}>
+        Проверка авторизации...
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <AuthScreen
+        onSuccess={(user) => {
+          setCurrentUser(user);
+          setLoading(true);
+          loadTagsData();
+          loadPrioritiesData();
+        }}
+      />
+    );
+  }
+
   if (loading) return <div className="calendar-main">Загрузка...</div>;
 
   const filteredTasks = filterTagId || filterPriorityId
@@ -519,6 +567,55 @@ const App: React.FC = () => {
             <h1>Календарь задач</h1>
           </div>
           <div className="nav-buttons">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 16,
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                color: 'var(--text-color, #4f46e5)',
+                fontSize: 12,
+                fontWeight: 600,
+                marginRight: 6,
+              }}
+            >
+              <UserIcon size={14} />
+              <span>{currentUser.username}</span>
+              {currentUser.role === 'admin' && (
+                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, background: '#f59e0b', color: '#fff', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Admin
+                </span>
+              )}
+            </div>
+
+            {currentUser.role === 'admin' && (
+              <button
+                className="nav-btn"
+                onClick={() => setIsInvitesModalOpen(true)}
+                title="Инвайты для регистрации"
+                style={{ marginRight: 4 }}
+              >
+                <KeyRound size={18} />
+              </button>
+            )}
+
+            <button
+              className="nav-btn"
+              onClick={async () => {
+                try {
+                  await logoutUser();
+                } finally {
+                  setCurrentUser(null);
+                }
+              }}
+              title="Выйти"
+              style={{ marginRight: 6 }}
+            >
+              <LogOut size={18} />
+            </button>
+
             <button className="nav-btn theme-toggle-btn" onClick={toggleTheme} title={isDark ? 'Светлая тема' : 'Темная тема'}>
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -607,7 +704,15 @@ const App: React.FC = () => {
         isOpen={isSqlModalOpen}
         onClose={() => setIsSqlModalOpen(false)}
         onSelectTask={handleSelectTaskById}
+        user={currentUser}
       />
+
+      {currentUser?.role === 'admin' && (
+        <AdminInvitesModal
+          isOpen={isInvitesModalOpen}
+          onClose={() => setIsInvitesModalOpen(false)}
+        />
+      )}
 
       <div className="toast-container">
         {toastQueue.map((toast, index) => (

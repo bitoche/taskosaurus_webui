@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { executeTaskQuery } from '../api';
-import { SqlQueryResult } from '../types';
+import { SqlQueryResult, User } from '../types';
 import {
   Database,
   Play,
@@ -22,6 +22,7 @@ interface SqlQueryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectTask?: (taskId: number) => void;
+  user?: User | null;
 }
 
 interface QueryPreset {
@@ -86,7 +87,7 @@ const SCHEMA_INFO: { table: string; description: string; columns: string[] }[] =
   }
 ];
 
-const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelectTask }) => {
+const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelectTask, user }) => {
   const [query, setQuery] = useState<string>(PRESETS[0].query);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,9 +229,22 @@ const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelect
           <div className="sql-modal-title">
             <Database className="sql-modal-icon" size={24} />
             <div>
-              <h2>SQL-запрос к базе задач</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h2>SQL-запрос к базе задач</h2>
+                {user?.role === 'admin' ? (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#fef3c7', color: '#b45309', fontWeight: 600, border: '1px solid #fde68a' }}>
+                    🔑 Администратор (Вся база данных)
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#d1fae5', color: '#047857', fontWeight: 600, border: '1px solid #a7f3d0' }}>
+                    🔒 Изоляция (Только ваши данные)
+                  </span>
+                )}
+              </div>
               <span className="sql-modal-subtitle">
-                Выполнение аналитических SELECT-запросов напрямую к базе данных
+                {user?.role === 'admin'
+                  ? 'Выполнение аналитических SELECT-запросов ко всей базе данных'
+                  : 'Выполнение SELECT-запросов с автоматической фильтрацией по вашему пользователю'}
               </span>
             </div>
           </div>
@@ -375,6 +389,11 @@ const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelect
               <div className="sql-results-toolbar">
                 <div className="sql-results-count">
                   Найдено записей: <strong>{result.count}</strong>
+                  {result.is_isolated && (
+                    <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 4, background: '#ecfdf5', color: '#059669', fontSize: '0.8em', fontWeight: 500, border: '1px solid #a7f3d0' }}>
+                      🔒 Автоматически изолировано по вашему аккаунту
+                    </span>
+                  )}
                   {result.has_more && (
                     <span className="sql-has-more-badge" style={{ marginLeft: 8, color: '#f59e0b', fontSize: '0.85em' }}>
                       (показаны первые {result.count} строк, лимит выборки)

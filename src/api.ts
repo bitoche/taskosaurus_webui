@@ -9,6 +9,8 @@ import {
   CreatePriorityDTO,
   UpdatePriorityDTO,
   SqlQueryResult,
+  User,
+  InviteToken,
 } from './types';
 
 const API_BASE = '/api';
@@ -42,7 +44,10 @@ async function request<T = void>(path: string, options?: RequestInit): Promise<T
   const method = options?.method || 'GET';
   logRequest(method, path);
 
-  const res = await fetch(path, options);
+  const res = await fetch(path, {
+    ...options,
+    credentials: 'include',
+  });
 
   if (!res.ok) {
     let errorMessage = `HTTP ${res.status} ${res.statusText}`;
@@ -265,4 +270,45 @@ export async function executeTaskQuery(sql: string): Promise<SqlQueryResult> {
     body: JSON.stringify({ query: sql }),
   });
 }
+
+// ── Аутентификация и инвайты ─────────────────────────────────────────────────
+
+export async function loginUser(username: string, password: string): Promise<User> {
+  return request<User>(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function logoutUser(): Promise<void> {
+  await request<void>(`${API_BASE}/auth/logout`, {
+    method: 'POST',
+  });
+}
+
+export async function fetchCurrentUser(): Promise<User> {
+  return request<User>(`${API_BASE}/auth/me`);
+}
+
+export async function createInviteToken(expiresHours?: number): Promise<InviteToken> {
+  return request<InviteToken>(`${API_BASE}/auth/invites`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expires_hours: expiresHours }),
+  });
+}
+
+export async function fetchActiveInvites(): Promise<InviteToken[]> {
+  return request<InviteToken[]>(`${API_BASE}/auth/invites`);
+}
+
+export async function registerWithInvite(token: string, username: string, password: string): Promise<User> {
+  return request<User>(`${API_BASE}/auth/register-with-invite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, username, password }),
+  });
+}
+
 

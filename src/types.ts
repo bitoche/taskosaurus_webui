@@ -92,5 +92,25 @@ export interface SqlQueryResult {
   rows: Record<string, any>[];
   count: number;
   has_more?: boolean;
+  is_isolated?: boolean;
 }
+
+// Пользователи и авторизация
+export interface User {
+  user_id: number;
+  username: string;
+  email?: string | null;
+  role: 'admin' | 'user';
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface InviteToken {
+  token: string;
+  created_by_user_id: number;
+  expires_at: string;
+  is_used: boolean;
+  created_at: string;
+}
+
 
