@@ -34,8 +34,12 @@ function logRequest(method: string, path: string) {
   console.log(`[API →] ${method} ${path}`);
 }
 
-function logResponse(path: string, data: any, error?: string) {
+function logResponse(path: string, data: any, error?: string, status?: number) {
   if (error) {
+    if (path === `${API_BASE}/auth/me` && status === 401) {
+      // Ожидаемый ответ при проверке сессии неавторизованного пользователя
+      return;
+    }
     console.error(`[API ←] ${path} ERROR: ${error}`);
   } else {
     console.log(`[API ←] ${path} data:`, data);
@@ -77,8 +81,10 @@ async function request<T = void>(path: string, options?: RequestInit): Promise<T
       // fallback to default errorMessage
     }
 
-    logResponse(path, null, `${res.status}: ${errorMessage}`);
-    throw new Error(errorMessage);
+    logResponse(path, null, `${res.status}: ${errorMessage}`, res.status);
+    const err: any = new Error(errorMessage);
+    err.status = res.status;
+    throw err;
   }
 
   if (res.status === 204) {

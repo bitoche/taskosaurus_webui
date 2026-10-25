@@ -140,8 +140,19 @@ const App: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
+  // Сброс данных при выходе пользователя
+  useEffect(() => {
+    if (!currentUser) {
+      setTasks([]);
+      setAllTags([]);
+      setTaskTagsMap(new Map());
+      setAllPriorities([]);
+    }
+  }, [currentUser]);
+
   // === Загрузка задач и тегов ===
   const loadTasksForRange = useCallback(async (from: string, to: string) => {
+    if (!currentUser) return [];
     try {
       const newTasks = await fetchTasksRange(from, to);
       setTasks(prev => {
@@ -151,14 +162,19 @@ const App: React.FC = () => {
       });
       return newTasks;
     } catch (err: any) {
+      if (err?.status === 401) {
+        setCurrentUser(null);
+        return [];
+      }
       console.error('Failed to load range', err);
       addToast('error-load-tasks', { type: 'error', message: `Ошибка загрузки задач: ${err?.message || err}` });
       return [];
     }
-  }, [addToast]);
+  }, [currentUser, addToast]);
 
   // === Полное обновление задач за период (слияние без мерцания) ===
   const refreshTasksForRange = useCallback(async (from: string, to: string) => {
+    if (!currentUser) return [];
     try {
       const fetchedTasks = await fetchTasksRange(from, to);
       setTasks(prev => {
@@ -174,13 +190,18 @@ const App: React.FC = () => {
       });
       return fetchedTasks;
     } catch (err: any) {
+      if (err?.status === 401) {
+        setCurrentUser(null);
+        return [];
+      }
       console.error('Failed to refresh tasks range', err);
       addToast('error-refresh-tasks', { type: 'error', message: `Ошибка обновления задач: ${err?.message || err}` });
       return [];
     }
-  }, [addToast]);
+  }, [currentUser, addToast]);
 
   const loadTagsData = useCallback(async () => {
+    if (!currentUser) return;
     try {
       const tags = await fetchAllTags();
       const assignments = await fetchTaskTagsXTask();
@@ -195,23 +216,33 @@ const App: React.FC = () => {
       setAllTags(tags);
       setTaskTagsMap(map);
     } catch (err: any) {
+      if (err?.status === 401) {
+        setCurrentUser(null);
+        return;
+      }
       console.error('Failed to load tags data', err);
       addToast('error-load-tags', { type: 'error', message: `Ошибка загрузки тегов: ${err?.message || err}` });
     }
-  }, [addToast]);
+  }, [currentUser, addToast]);
 
   const loadPrioritiesData = useCallback(async () => {
+    if (!currentUser) return;
     try {
       const priorities = await fetchAllPriorities();
       setAllPriorities(priorities);
     } catch (err: any) {
+      if (err?.status === 401) {
+        setCurrentUser(null);
+        return;
+      }
       console.error('Failed to load priorities data', err);
       addToast('error-load-priorities', { type: 'error', message: `Ошибка загрузки приоритетов: ${err?.message || err}` });
     }
-  }, [addToast]);
+  }, [currentUser, addToast]);
 
   // === Обновление задач (ручное или автоматическое фоновое) ===
   const handleRefreshTasks = useCallback(async (isSilent = false) => {
+    if (!currentUser) return;
     if (!isSilent) setRefreshing(true);
     try {
       const today = new Date();
@@ -227,6 +258,10 @@ const App: React.FC = () => {
         loadPrioritiesData(),
       ]);
     } catch (err: any) {
+      if (err?.status === 401) {
+        setCurrentUser(null);
+        return;
+      }
       console.error('Failed to refresh tasks', err);
       if (!isSilent) {
         addToast('error-refresh', { type: 'error', message: `Ошибка обновления: ${err?.message || err}` });
@@ -236,20 +271,22 @@ const App: React.FC = () => {
         setTimeout(() => setRefreshing(false), 400);
       }
     }
-  }, [refreshTasksForRange, loadTagsData, loadPrioritiesData, addToast]);
+  }, [currentUser, refreshTasksForRange, loadTagsData, loadPrioritiesData, addToast]);
 
-  // === Инициализация данных при старте приложения ===
+  // === Инициализация данных только при наличии авторизованного пользователя ===
   useEffect(() => {
+    if (!currentUser) return;
     handleRefreshTasks(true).finally(() => setLoading(false));
-  }, [handleRefreshTasks]);
+  }, [currentUser, handleRefreshTasks]);
 
-  // === Автоматическая периодическая фоновая синхронизация с сервером (раз в 20 сек) ===
+  // === Автоматическая периодическая фоновая синхронизация с сервером (раз в 20 сек) только для авторизованного пользователя ===
   useEffect(() => {
+    if (!currentUser) return;
     const interval = setInterval(() => {
       handleRefreshTasks(true);
     }, 20000);
     return () => clearInterval(interval);
-  }, [handleRefreshTasks]);
+  }, [currentUser, handleRefreshTasks]);
 
   const scrollToToday = () => {
     const today = new Date();
@@ -545,9 +582,6 @@ const App: React.FC = () => {
       <AuthScreen
         onSuccess={(user) => {
           setCurrentUser(user);
-          setLoading(true);
-          loadTagsData();
-          loadPrioritiesData();
         }}
       />
     );
