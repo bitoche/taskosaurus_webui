@@ -302,12 +302,6 @@ body {
   flex-shrink: 0;
   transition: color 0.3s ease;
 }
-.day-card.today-card {
-  background: var(--today-card-bg);
-  border: 2px solid var(--today-card-border);
-}
-.today-card .date { color: var(--today-card-date); }
-
 /* Выходные дни — незаметная штриховка */
 .day-card.weekend-card {
   background: var(--bg-weekend), var(--weekend-bg);
@@ -340,6 +334,14 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Сегодняшний день (в т.ч. если выпадает на выходной или праздник) */
+.day-card.today-card {
+  background: var(--today-card-bg);
+  background-blend-mode: normal;
+  border: 2px solid var(--today-card-border);
+}
+.today-card .date { color: var(--today-card-date); }
 
 /* Список задач */
 .tasks-list {
