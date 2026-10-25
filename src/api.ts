@@ -311,6 +311,12 @@ export async function fetchActiveInvites(): Promise<InviteToken[]> {
   return request<InviteToken[]>(`${API_BASE}/auth/invites`);
 }
 
+export async function deleteInviteToken(token: string): Promise<void> {
+  await request<void>(`${API_BASE}/auth/invites/${encodeURIComponent(token)}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function registerWithInvite(token: string, username: string, password: string): Promise<User> {
   return request<User>(`${API_BASE}/auth/register-with-invite`, {
     method: 'POST',

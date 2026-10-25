@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, KeyRound, Copy, Check, Plus, Clock, ShieldAlert } from 'lucide-react';
-import { createInviteToken, fetchActiveInvites } from '../api';
+import { X, KeyRound, Copy, Check, Plus, Clock, ShieldAlert, Trash2 } from 'lucide-react';
+import { createInviteToken, fetchActiveInvites, deleteInviteToken } from '../api';
 import { InviteToken } from '../types';
 import './ManagementModals.css';
 
@@ -13,6 +13,7 @@ export const AdminInvitesModal: React.FC<AdminInvitesModalProps> = ({ isOpen, on
   const [invites, setInvites] = useState<InviteToken[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deletingToken, setDeletingToken] = useState<string | null>(null);
   const [hours, setHours] = useState(48);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [newInviteLink, setNewInviteLink] = useState<string | null>(null);
@@ -63,6 +64,23 @@ export const AdminInvitesModal: React.FC<AdminInvitesModalProps> = ({ isOpen, on
       setTimeout(() => setCopiedToken(null), 2500);
     } catch {
       // fallback
+    }
+  };
+
+  const handleDeleteInvite = async (token: string) => {
+    if (!window.confirm('Отозвать и удалить этот инвайт? Ссылка перестанет действовать.')) return;
+    setDeletingToken(token);
+    setError(null);
+    try {
+      await deleteInviteToken(token);
+      setInvites(prev => prev.filter(i => i.token !== token));
+      if (newInviteLink?.includes(token)) {
+        setNewInviteLink(null);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Не удалось удалить инвайт');
+    } finally {
+      setDeletingToken(null);
     }
   };
 
@@ -189,15 +207,27 @@ export const AdminInvitesModal: React.FC<AdminInvitesModalProps> = ({ isOpen, on
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(link, inv.token)}
-                        className="mgmt-btn-secondary"
-                        style={{ height: 30, padding: '0 10px', fontSize: 11 }}
-                      >
-                        {isCopied ? <Check size={13} style={{ color: '#10b981' }} /> : <Copy size={13} />}
-                        <span>{isCopied ? 'Скопировано' : 'Ссылка'}</span>
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(link, inv.token)}
+                          className="mgmt-btn-secondary"
+                          style={{ height: 30, padding: '0 10px', fontSize: 11 }}
+                        >
+                          {isCopied ? <Check size={13} style={{ color: '#10b981' }} /> : <Copy size={13} />}
+                          <span>{isCopied ? 'Скопировано' : 'Ссылка'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteInvite(inv.token)}
+                          disabled={deletingToken === inv.token}
+                          className="mgmt-action-icon-btn"
+                          title="Отозвать и удалить инвайт"
+                          style={{ color: '#ef4444', height: 30, width: 30, padding: 0 }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
