@@ -14,17 +14,15 @@ import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import SqlQueryModal from './components/SqlQueryModal';
 import AuthScreen from './components/AuthScreen';
-import AdminInvitesModal from './components/AdminInvitesModal';
 import AdminUsersModal from './components/AdminUsersModal';
 import DataBackupModal from './components/DataBackupModal';
-import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, KeyRound, User as UserIcon, Users, ArrowUpDown, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, User as UserIcon, Users, ArrowUpDown, Loader2 } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isInvitesModalOpen, setIsInvitesModalOpen] = useState(false);
   const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
@@ -704,24 +702,14 @@ const App: React.FC = () => {
             </div>
 
             {currentUser.role === 'admin' && (
-              <>
-                <button
-                  className="nav-btn"
-                  onClick={() => setIsUsersModalOpen(true)}
-                  title="Управление пользователями и сессиями"
-                  style={{ marginRight: 4 }}
-                >
-                  <Users size={18} />
-                </button>
-                <button
-                  className="nav-btn"
-                  onClick={() => setIsInvitesModalOpen(true)}
-                  title="Инвайты для регистрации"
-                  style={{ marginRight: 4 }}
-                >
-                  <KeyRound size={18} />
-                </button>
-              </>
+              <button
+                className="nav-btn"
+                onClick={() => setIsUsersModalOpen(true)}
+                title="Панель администратора"
+                style={{ marginRight: 4 }}
+              >
+                <Users size={18} />
+              </button>
             )}
 
             <button
@@ -840,19 +828,13 @@ const App: React.FC = () => {
       />
 
       {currentUser?.role === 'admin' && (
-        <>
-          <AdminInvitesModal
-            isOpen={isInvitesModalOpen}
-            onClose={() => setIsInvitesModalOpen(false)}
-          />
-          <AdminUsersModal
-            isOpen={isUsersModalOpen}
-            onClose={() => setIsUsersModalOpen(false)}
-            currentAdminId={currentUser.user_id}
-            onNotify={(type, msg) => addToast(`admin-${Date.now()}`, { type, message: msg })}
-            onRefreshData={() => handleRefreshTasks(true)}
-          />
-        </>
+        <AdminUsersModal
+          isOpen={isUsersModalOpen}
+          onClose={() => setIsUsersModalOpen(false)}
+          currentAdminId={currentUser.user_id}
+          onNotify={(type, msg) => addToast(`admin-${Date.now()}`, { type, message: msg })}
+          onRefreshData={() => handleRefreshTasks(true)}
+        />
       )}
 
       {currentUser && (
