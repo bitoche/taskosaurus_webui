@@ -674,8 +674,9 @@ const App: React.FC = () => {
     <>
       <div className="calendar-main">
         <div className="calendar-header">
-          <div className="title-section">
-            <h1>Календарь задач</h1>
+          <div className="title-section" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/favicon.svg" alt="Task-o-Saurus" style={{ width: 34, height: 34, borderRadius: 8 }} />
+            <h1>Task-o-Saurus</h1>
           </div>
           <div className="nav-buttons">
             <div
