@@ -3,19 +3,64 @@ import { Bold, Italic, List, ListOrdered, Link as LinkIcon, Code, Quote, Edit2, 
 import { marked } from 'marked';
 import './MarkdownEditor.css';
 
+function escapeHtml(html: string): string {
+  return html
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Настраиваем marked: gfm, авто-ссылки в новом окне
 marked.setOptions({
   gfm: true,
   breaks: false,
 });
 
-// Все ссылки открываются в новом окне
+// Все ссылки открываются в новом окне, многострочный код оборачивается с кнопкой копирования
 const renderer = new marked.Renderer();
 renderer.link = ({ href, title, text }) => {
   const sanitizedTitle = title ? ` title="${title}"` : '';
   return `<a href="${href}" target="_blank" rel="noopener noreferrer"${sanitizedTitle}>${text}</a>\n`;
 };
+
+renderer.code = ({ text, lang }) => {
+  const language = (lang || '').trim();
+  const escapedText = escapeHtml(text);
+  const langDisplay = language || 'code';
+  const langClass = language ? ` class="language-${escapeHtml(language)}"` : '';
+
+  return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-block-lang">${escapeHtml(langDisplay)}</span><button type="button" class="copy-code-btn" title="Скопировать код"><svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span class="copy-text">Скопировать</span></button></div><pre><code${langClass}>${escapedText}</code></pre></div>\n`;
+};
+
 marked.setOptions({ renderer });
+
+// Глобальный слушатель копирования кода из блоков
+if (typeof document !== 'undefined' && !(window as any).__copyCodeHandlerAttached) {
+  (window as any).__copyCodeHandlerAttached = true;
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.copy-code-btn');
+    if (!btn) return;
+    const wrapper = btn.closest('.code-block-wrapper');
+    const codeElem = wrapper?.querySelector('pre code');
+    if (!codeElem) return;
+
+    const rawCode = codeElem.textContent || '';
+    try {
+      await navigator.clipboard.writeText(rawCode);
+      btn.classList.add('copied');
+      const textSpan = btn.querySelector('.copy-text');
+      if (textSpan) textSpan.textContent = 'Скопировано!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        if (textSpan) textSpan.textContent = 'Скопировать';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy code to clipboard', err);
+    }
+  });
+}
 
 // Markdown рендерер на базе marked
 export const renderMarkdown = (text: string): string => {
