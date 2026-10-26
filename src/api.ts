@@ -369,5 +369,15 @@ export async function importUserDataByAdmin(userId: number, data: any): Promise<
   });
 }
 
+export async function fetchBackendVersion(): Promise<string | null> {
+  try {
+    const res = await request<{ version?: string }>(`${API_BASE}/version`);
+    return res?.version || null;
+  } catch {
+    return null;
+  }
+}
+
+
 
 

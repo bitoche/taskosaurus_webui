@@ -7,7 +7,9 @@ import {
   fetchAllPriorities, createPriority, updatePriority, deletePriority,
   fetchTaskById,
   fetchCurrentUser, logoutUser,
+  fetchBackendVersion,
 } from './api';
+import packageJson from '../package.json';
 import { Task, CreateTaskDTO, UpdateTaskDTO, TaskTag, TaskPriority, User } from './types';
 import CalendarStrip, { CalendarStripRef } from './components/CalendarStrip';
 import TaskModal from './components/TaskModal';
@@ -34,6 +36,13 @@ const App: React.FC = () => {
     isOpen: false,
   });
   const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
+  const [backendVersion, setBackendVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchBackendVersion().then(v => {
+      if (v) setBackendVersion(v);
+    });
+  }, []);
 
   // Проверка сессии пользователя при старте
   useEffect(() => {
@@ -791,8 +800,37 @@ const App: React.FC = () => {
           onEditTask={handleEditTask}
           onDeleteTask={(task) => handleDeleteTask(task.task_id)}
         />
-        <footer>
-          Клик по дню – новая задача, по названию – редактировать.
+        <footer className="app-footer">
+          <div className="footer-hint">
+            Клик по дню – новая задача, по названию – редактировать.
+          </div>
+          <div className="footer-meta">
+            <span className="footer-versions">
+              Web v{packageJson.version} &bull; API {backendVersion ? `v${backendVersion}` : '...'}
+            </span>
+            <span className="footer-divider">•</span>
+            <span className="footer-issues">
+              Issues:
+              {' '}
+              <a
+                href="https://github.com/bitoche/taskozaurus_webui/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-link"
+              >
+                Frontend
+              </a>
+              {' / '}
+              <a
+                href="https://github.com/bitoche/taskozaurus_taskmanager/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-link"
+              >
+                Backend
+              </a>
+            </span>
+          </div>
         </footer>
       </div>
       <TaskModal
