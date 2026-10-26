@@ -63,15 +63,15 @@
 
 /* Активный тег */
 .task-tag-active {
-  color: white;
+  box-shadow: 0 0 0 2px var(--bg-element, #fff), 0 0 0 4px var(--accent-color, #3b82f6);
 }
 
 .task-tag-active .tag-action-btn {
-  color: white;
+  color: inherit;
 }
 
 .task-tag-active .tag-action-btn:hover {
-  color: rgba(255, 255, 255, 0.8);
+  opacity: 0.8;
 }
 
 /* Затемнённый тег (когда активен фильтр по другому тегу) */

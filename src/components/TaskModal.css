@@ -300,12 +300,13 @@
   border-radius: 40px;
   font-size: 0.8rem;
   font-weight: 500;
-  color: var(--tag-color);
+  color: inherit;
   background: var(--tag-bg);
   transition: background 0.3s ease, color 0.3s ease;
 }
 
 .tag-remove {
+  color: inherit;
   background: none;
   border: none;
   cursor: pointer;
@@ -387,7 +388,7 @@
   border-radius: 10px;
   cursor: pointer;
   font-size: 0.85rem;
-  color: var(--tag-color);
+  color: var(--modal-title);
   transition: background 0.3s ease;
 }
 

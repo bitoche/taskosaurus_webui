@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TaskTag } from '../types';
 import { X, Check, Edit2, Trash2 } from 'lucide-react';
+import { getContrastTextColor } from '../utils/color';
 import './TagManager.css';
 
 interface Props {
@@ -181,18 +182,21 @@ const TagItem: React.FC<TagItemProps> = ({
   if (disabled) cls.push('task-tag-disabled');
   if (isAdd) cls.push('task-tag-add');
 
+  const textColor = !isAdd && !disabled && !dimmed ? getContrastTextColor(color) : undefined;
+
   return (
     <div
       className={cls.join(' ')}
-      style={!isAdd && !disabled && !dimmed ? { backgroundColor: color } as React.CSSProperties : undefined}
+      style={!isAdd && !disabled && !dimmed ? { backgroundColor: color, color: textColor } as React.CSSProperties : undefined}
       onClick={!disabled && onClick ? onClick : undefined}
     >
       <span>{text}</span>
       {!isAdd && (
-        <span className="tag-actions">
+        <span className="tag-actions" style={{ color: textColor }}>
           {onEdit && (
             <button
               className="tag-action-btn mini-button"
+              style={{ color: textColor }}
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               title="Редактировать"
             >
@@ -202,6 +206,7 @@ const TagItem: React.FC<TagItemProps> = ({
           {onDelete && (
             <button
               className="tag-action-btn mini-button"
+              style={{ color: textColor }}
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               title="Удалить"
             >

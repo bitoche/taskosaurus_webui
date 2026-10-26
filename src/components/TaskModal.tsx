@@ -3,6 +3,7 @@ import { Task, TaskComment, TaskTag, TaskPriority } from '../types';
 import { fetchTaskComments, addTaskComment, deleteTaskComment } from '../api';
 import { X, Send, Trash2, Plus, Tag, MessageSquare, FileText, ExternalLink, Calendar, Check, Clock, ChevronDown, ChevronUp, Flag, Loader2 } from 'lucide-react';
 import { MarkdownEditor, renderMarkdown } from './MarkdownEditor';
+import { getContrastTextColor } from '../utils/color';
 import './TaskModal.css';
 
 interface Props {
@@ -381,19 +382,24 @@ const TaskModal: React.FC<Props> = ({
                   {taskTags.length === 0 ? (
                     <div className="empty-hint">Нет тегов</div>
                   ) : (
-                    taskTags.map(tag => (
-                      <div key={tag.task_tag_id} className="tag-chip" style={{ backgroundColor: tag.tag_color }}>
-                        {tag.tag_text}
-                        <button
-                          type="button"
-                          className="tag-remove"
-                          onClick={() => onRemoveTag(tag.task_tag_id)}
-                          title="Удалить тег"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ))
+                    taskTags.map(tag => {
+                      const bg = tag.tag_color || '#4a90d9';
+                      const fg = getContrastTextColor(bg);
+                      return (
+                        <div key={tag.task_tag_id} className="tag-chip" style={{ backgroundColor: bg, color: fg }}>
+                          {tag.tag_text}
+                          <button
+                            type="button"
+                            className="tag-remove"
+                            style={{ color: fg }}
+                            onClick={() => onRemoveTag(tag.task_tag_id)}
+                            title="Удалить тег"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
                 <div className="tag-selector-wrapper" ref={tagSelectorRef}>

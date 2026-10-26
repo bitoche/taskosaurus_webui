@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TaskTag } from '../types';
 import { X } from 'lucide-react';
+import { getContrastTextColor } from '../utils/color';
 
 interface Props {
   tags: TaskTag[];
@@ -17,25 +18,29 @@ const TaskTags: React.FC<Props> = ({ tags, onRemove, maxVisible = 3 }) => {
 
   return (
     <div className="task-tags-container">
-      {visibleTags.map(tag => (
-        <div
-          key={tag.task_tag_id}
-          className="task-tag day-card-task-tag"
-          style={{ backgroundColor: tag.tag_color || '#e0e0e0' }}
-          onMouseEnter={() => setHoveredTagId(tag.task_tag_id)}
-          onMouseLeave={() => setHoveredTagId(null)}
-        >
-          <span>{tag.tag_text}</span>
-          {onRemove && (
-            <X
-              size={12}
-              className="tag-remove-icon"
-              style={{ opacity: hoveredTagId === tag.task_tag_id ? 1 : 0 }}
-              onClick={(e) => { e.stopPropagation(); onRemove(tag.task_tag_id); }}
-            />
-          )}
-        </div>
-      ))}
+      {visibleTags.map(tag => {
+        const bg = tag.tag_color || '#e0e0e0';
+        const fg = getContrastTextColor(bg);
+        return (
+          <div
+            key={tag.task_tag_id}
+            className="task-tag day-card-task-tag"
+            style={{ backgroundColor: bg, color: fg }}
+            onMouseEnter={() => setHoveredTagId(tag.task_tag_id)}
+            onMouseLeave={() => setHoveredTagId(null)}
+          >
+            <span>{tag.tag_text}</span>
+            {onRemove && (
+              <X
+                size={12}
+                className="tag-remove-icon"
+                style={{ opacity: hoveredTagId === tag.task_tag_id ? 1 : 0, color: fg }}
+                onClick={(e) => { e.stopPropagation(); onRemove(tag.task_tag_id); }}
+              />
+            )}
+          </div>
+        );
+      })}
       {hiddenCount > 0 && (
         <div className="task-tag day-card-task-tag more-tags" title={tags.slice(maxVisible).map(t => t.tag_text).join(', ')}>
           +{hiddenCount}
