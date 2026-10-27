@@ -1129,3 +1129,118 @@ input[type="color"]:hover {
 .dark .toast-close-btn:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
+/* ==================== Мобильная адаптивность (Mobile Responsive) ==================== */
+@media (max-width: 768px) {
+  body {
+    padding: 0.75rem 0.5rem 5.5rem 0.5rem; /* отступ снизу под фиксированные кнопки */
+  }
+
+  .calendar-main {
+    padding: 1rem 0.75rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.15);
+  }
+
+  .calendar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .calendar-header .title-section {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .title-section h1 {
+    font-size: 1.45rem;
+  }
+
+  .nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+
+  /* Плавающие кнопки на мобильных: внизу справа */
+  .fixed-buttons {
+    top: auto;
+    bottom: 20px;
+    right: 16px;
+    flex-direction: row-reverse;
+    gap: 10px;
+    z-index: 1000;
+  }
+
+  .fixed-buttons button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Тосты на мобильных */
+  .toast-container {
+    bottom: 84px;
+    right: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+  }
+
+  .toast {
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+
+  /* Кнопка показа таблицы всех задач на мобильном */
+  .mobile-table-toggle-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--bg-element);
+    border: 1px dashed var(--border-color);
+    border-radius: 14px;
+    padding: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    min-height: 44px;
+    transition: background 0.15s;
+  }
+
+  .mobile-table-toggle-btn:active {
+    background: var(--bg-element-hover);
+  }
+
+  /* Футер */
+  .app-footer {
+    padding: 1rem 0.5rem;
+    font-size: 0.78rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .footer-meta {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+

@@ -12,13 +12,14 @@ import {
 import packageJson from '../package.json';
 import { Task, CreateTaskDTO, UpdateTaskDTO, TaskTag, TaskPriority, User } from './types';
 import CalendarStrip, { CalendarStripRef } from './components/CalendarStrip';
+import MobileCalendarView from './components/MobileCalendarView';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import SqlQueryModal from './components/SqlQueryModal';
 import AuthScreen from './components/AuthScreen';
 import AdminUsersModal from './components/AdminUsersModal';
 import DataBackupModal from './components/DataBackupModal';
-import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, User as UserIcon, Users, ArrowUpDown, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, User as UserIcon, Users, ArrowUpDown, Loader2, Smartphone, Monitor, ChevronDown, ChevronUp } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
@@ -37,6 +38,23 @@ const App: React.FC = () => {
   });
   const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
   const [backendVersion, setBackendVersion] = useState<string | null>(null);
+
+  // Режим отображения: мобильный вид или десктопный горизонтальный календарь
+  const [isMobileView, setIsMobileView] = useState<boolean>(() => {
+    const saved = localStorage.getItem('view_mode');
+    if (saved === 'mobile') return true;
+    if (saved === 'desktop') return false;
+    return typeof window !== 'undefined' && window.innerWidth <= 768;
+  });
+  const [isMobileTableOpen, setIsMobileTableOpen] = useState(false);
+
+  const toggleViewMode = () => {
+    setIsMobileView(prev => {
+      const next = !prev;
+      localStorage.setItem('view_mode', next ? 'mobile' : 'desktop');
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchBackendVersion().then(v => {
@@ -746,36 +764,67 @@ const App: React.FC = () => {
               <LogOut size={18} />
             </button>
 
+            <button
+              className="nav-btn"
+              onClick={toggleViewMode}
+              title={isMobileView ? "Переключить на горизонтальный календарь" : "Переключить на мобильный вид"}
+              style={{ marginRight: 4 }}
+            >
+              {isMobileView ? <Monitor size={18} /> : <Smartphone size={18} />}
+            </button>
+
             <button className="nav-btn theme-toggle-btn" onClick={toggleTheme} title={isDark ? 'Светлая тема' : 'Темная тема'}>
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <button className="nav-btn" onClick={() => calendarRef.current?.scrollLeft()}>
+            <button className="nav-btn" onClick={() => calendarRef.current?.scrollLeft()} title="Влево / Предыдущий день">
               <ChevronLeft size={20} />
             </button>
-            <button className="nav-btn" onClick={() => calendarRef.current?.scrollRight()}>
+            <button className="nav-btn" onClick={() => calendarRef.current?.scrollRight()} title="Вправо / Следующий день">
               <ChevronRight size={20} />
             </button>
           </div>
         </div>
-        <CalendarStrip
-          ref={calendarRef}
-          tasks={filteredTasks}
-          onAddTask={handleAddTask}
-          onEditTask={handleEditTask}
-          onMoveTask={handleMoveTask}
-          onLoadRange={loadTasksForRange}
-          onToggleStatus={handleToggleStatus}
-          taskTagsMap={taskTagsMap}
-          onRemoveTag={handleRemoveTagFromTask}
-          allPriorities={allPriorities}
-          onHolidaysLoadingChange={(loading) => {
-            if (loading) {
-              addToast('holidays-loading', { type: 'holidays', message: <><RefreshCw size={16} className="spin-icon" /><div className='toast-text'>Загружаем праздники...</div></> });
-            } else {
-              removeToast('holidays-loading');
-            }
-          }}
-        />
+        {isMobileView ? (
+          <MobileCalendarView
+            ref={calendarRef}
+            tasks={filteredTasks}
+            onAddTask={handleAddTask}
+            onEditTask={handleEditTask}
+            onMoveTask={handleMoveTask}
+            onLoadRange={loadTasksForRange}
+            onToggleStatus={handleToggleStatus}
+            taskTagsMap={taskTagsMap}
+            onRemoveTag={handleRemoveTagFromTask}
+            allPriorities={allPriorities}
+            onHolidaysLoadingChange={(loading) => {
+              if (loading) {
+                addToast('holidays-loading', { type: 'holidays', message: <><RefreshCw size={16} className="spin-icon" /><div className='toast-text'>Загружаем праздники...</div></> });
+              } else {
+                removeToast('holidays-loading');
+              }
+            }}
+          />
+        ) : (
+          <CalendarStrip
+            ref={calendarRef}
+            tasks={filteredTasks}
+            onAddTask={handleAddTask}
+            onEditTask={handleEditTask}
+            onMoveTask={handleMoveTask}
+            onLoadRange={loadTasksForRange}
+            onToggleStatus={handleToggleStatus}
+            taskTagsMap={taskTagsMap}
+            onRemoveTag={handleRemoveTagFromTask}
+            allPriorities={allPriorities}
+            onHolidaysLoadingChange={(loading) => {
+              if (loading) {
+                addToast('holidays-loading', { type: 'holidays', message: <><RefreshCw size={16} className="spin-icon" /><div className='toast-text'>Загружаем праздники...</div></> });
+              } else {
+                removeToast('holidays-loading');
+              }
+            }}
+          />
+        )}
         <TagManager
           allTags={allTags}
           onCreateTag={handleCreateTag}
@@ -792,17 +841,41 @@ const App: React.FC = () => {
           onDeletePriority={handleDeletePriority}
           onUpdatePriority={handleUpdatePriority}
         />
-        <TaskList
-          tasks={filteredTasks}
-          taskTagsMap={taskTagsMap}
-          onTaskClick={handleTaskClickFromList}
-          onToggleStatus={handleToggleStatus}
-          onEditTask={handleEditTask}
-          onDeleteTask={(task) => handleDeleteTask(task.task_id)}
-        />
+        {isMobileView ? (
+          <>
+            <button
+              className="mobile-table-toggle-btn"
+              onClick={() => setIsMobileTableOpen(prev => !prev)}
+            >
+              <span>{isMobileTableOpen ? 'Скрыть таблицу всех задач' : `Показать общую таблицу задач (${filteredTasks.length})`}</span>
+              {isMobileTableOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {isMobileTableOpen && (
+              <TaskList
+                tasks={filteredTasks}
+                taskTagsMap={taskTagsMap}
+                onTaskClick={handleTaskClickFromList}
+                onToggleStatus={handleToggleStatus}
+                onEditTask={handleEditTask}
+                onDeleteTask={(task) => handleDeleteTask(task.task_id)}
+              />
+            )}
+          </>
+        ) : (
+          <TaskList
+            tasks={filteredTasks}
+            taskTagsMap={taskTagsMap}
+            onTaskClick={handleTaskClickFromList}
+            onToggleStatus={handleToggleStatus}
+            onEditTask={handleEditTask}
+            onDeleteTask={(task) => handleDeleteTask(task.task_id)}
+          />
+        )}
         <footer className="app-footer">
           <div className="footer-hint">
-            Клик по дню – новая задача, по названию – редактировать.
+            {isMobileView
+              ? 'Тап по задаче – редактировать, чекбокс – выполнить.'
+              : 'Клик по дню – новая задача, по названию – редактировать.'}
           </div>
           <div className="footer-meta">
             <span className="footer-versions">

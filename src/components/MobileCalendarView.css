@@ -1,0 +1,513 @@
+/* MobileCalendarView.css - Удобный мобильный интерфейс календаря задач */
+
+.mobile-calendar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+/* Переключатель режимов (День / Лента / Без даты) */
+.mobile-view-tabs {
+  display: flex;
+  background: var(--bg-tasks-list);
+  padding: 4px;
+  border-radius: 16px;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+}
+
+.mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px; /* Рекомендация Apple/Android для touch-элементов */
+  user-select: none;
+}
+
+.mobile-tab-btn.active {
+  background: var(--bg-element);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-btn);
+}
+
+.mobile-tab-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  font-weight: 700;
+}
+
+/* Навигация по датам (стрелки и заголовок дня) */
+.mobile-date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-element);
+  border-radius: 18px;
+  padding: 6px 10px;
+  box-shadow: var(--shadow-element);
+}
+
+.mobile-nav-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--bg-nav-btn);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.mobile-nav-arrow:active {
+  transform: scale(0.92);
+  background: var(--bg-nav-btn-hover);
+}
+
+.mobile-nav-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+
+.mobile-nav-center:active {
+  background: var(--bg-task-item-hover);
+}
+
+.mobile-nav-date-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mobile-nav-today-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 2px;
+}
+
+/* Лента чипов с датами (Week/Month Strip) */
+.mobile-date-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 4px 10px 4px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Скрываем скроллбар для нативного вида */
+}
+
+.mobile-date-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-date-chip {
+  flex: 0 0 54px;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--bg-element);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  user-select: none;
+}
+
+.mobile-date-chip:active {
+  transform: scale(0.95);
+}
+
+.mobile-date-chip.is-weekend {
+  color: var(--weekend-date);
+  background: var(--bg-weekend);
+}
+
+.mobile-date-chip.is-today {
+  border: 2px solid #ff9800;
+  font-weight: 700;
+}
+
+.mobile-date-chip.is-selected {
+  background: #3b82f6;
+  border-color: #2563eb;
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px -2px rgba(59, 130, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+.mobile-date-chip.is-selected .mobile-chip-weekday,
+.mobile-date-chip.is-selected .mobile-chip-day {
+  color: #ffffff !important;
+}
+
+.mobile-chip-weekday {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-bottom: 2px;
+}
+
+.mobile-chip-day {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.mobile-chip-dot {
+  position: absolute;
+  bottom: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6366f1;
+}
+
+.mobile-date-chip.is-selected .mobile-chip-dot {
+  background: #ffffff;
+}
+
+.mobile-chip-badge {
+  position: absolute;
+  bottom: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.2);
+  color: #4f46e5;
+  padding: 1px 4px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.mobile-date-chip.is-selected .mobile-chip-badge {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* Карточка выбранного дня */
+.mobile-day-card {
+  background: var(--bg-element);
+  border-radius: 24px;
+  padding: 1.25rem 1rem;
+  box-shadow: var(--shadow-element);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-day-card.today-card {
+  border-left: 5px solid #ff9800;
+}
+
+.mobile-day-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-day-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-day-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mobile-day-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-hint);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-holiday-pill {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.dark .mobile-holiday-pill {
+  background: rgba(220, 38, 38, 0.25);
+  color: #fca5a5;
+}
+
+/* Кнопка добавления задачи */
+.mobile-add-task-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 48px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.mobile-add-task-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+/* Список задач */
+.mobile-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-task-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--bg-task-item);
+  border-radius: 16px;
+  padding: 12px 10px;
+  border: 1px solid var(--border-color);
+  transition: background 0.15s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-task-card:active {
+  background: var(--bg-task-item-hover);
+}
+
+.mobile-task-card.completed {
+  background: var(--bg-task-completed);
+  opacity: 0.75;
+}
+
+.mobile-task-card.task-highlight {
+  outline: 2px solid #3b82f6;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Чекбокс статуса с увеличенной областью нажатия */
+.mobile-status-checkbox {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-hint);
+  margin: -6px 0 -6px -4px;
+}
+
+.mobile-status-checkbox .status-icon.completed {
+  color: #22c55e;
+}
+
+.mobile-status-checkbox .status-icon.incomplete {
+  color: var(--text-hint);
+}
+
+.mobile-task-content {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.mobile-task-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.mobile-task-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mobile-task-card.completed .mobile-task-title {
+  text-decoration: line-through;
+  color: var(--text-completed);
+}
+
+.mobile-priority-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+.mobile-task-tags {
+  margin-top: 6px;
+}
+
+.mobile-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mobile-task-action-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mobile-task-action-btn:active {
+  background: var(--bg-nav-btn-hover);
+}
+
+/* Пустое состояние дня */
+.mobile-empty-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  gap: 8px;
+}
+
+.mobile-empty-icon {
+  font-size: 2.2rem;
+  opacity: 0.6;
+}
+
+.mobile-empty-text {
+  font-size: 0.95rem;
+  color: var(--text-no-items);
+  font-weight: 500;
+}
+
+/* Режим "Лента" (Agenda) */
+.mobile-agenda-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.mobile-agenda-day-group {
+  background: var(--bg-element);
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: var(--shadow-element);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-agenda-day-group.is-today {
+  border-left: 4px solid #ff9800;
+}
+
+.mobile-agenda-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.mobile-agenda-day-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-agenda-add-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Режим "Без даты" */
+.mobile-nodate-container {
+  background: var(--bg-element);
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: var(--shadow-element);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-nodate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-nodate-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
