@@ -313,6 +313,22 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentUser, handleRefreshTasks]);
 
+  const handleHolidaysLoadingChange = useCallback((loading: boolean) => {
+    if (loading) {
+      addToast('holidays-loading', {
+        type: 'holidays',
+        message: (
+          <>
+            <RefreshCw size={16} className="spin-icon" />
+            <div className="toast-text">Загружаем праздники...</div>
+          </>
+        ),
+      });
+    } else {
+      removeToast('holidays-loading');
+    }
+  }, [addToast, removeToast]);
+
   const scrollToToday = () => {
     const today = new Date();
     const todayStr = formatLocalDate(today);
@@ -796,13 +812,7 @@ const App: React.FC = () => {
             taskTagsMap={taskTagsMap}
             onRemoveTag={handleRemoveTagFromTask}
             allPriorities={allPriorities}
-            onHolidaysLoadingChange={(loading) => {
-              if (loading) {
-                addToast('holidays-loading', { type: 'holidays', message: <><RefreshCw size={16} className="spin-icon" /><div className='toast-text'>Загружаем праздники...</div></> });
-              } else {
-                removeToast('holidays-loading');
-              }
-            }}
+            onHolidaysLoadingChange={handleHolidaysLoadingChange}
           />
         ) : (
           <CalendarStrip
@@ -816,13 +826,7 @@ const App: React.FC = () => {
             taskTagsMap={taskTagsMap}
             onRemoveTag={handleRemoveTagFromTask}
             allPriorities={allPriorities}
-            onHolidaysLoadingChange={(loading) => {
-              if (loading) {
-                addToast('holidays-loading', { type: 'holidays', message: <><RefreshCw size={16} className="spin-icon" /><div className='toast-text'>Загружаем праздники...</div></> });
-              } else {
-                removeToast('holidays-loading');
-              }
-            }}
+            onHolidaysLoadingChange={handleHolidaysLoadingChange}
           />
         )}
         <TagManager

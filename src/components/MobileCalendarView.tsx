@@ -97,11 +97,15 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
   const [highlightedTaskId, setHighlightedTaskId] = useState<number | null>(null);
 
   const stripRef = useRef<HTMLDivElement>(null);
+  const initialized = useRef(false);
   const todayStr = formatLocalDate(getTodayDate());
   const selectedDateStr = formatLocalDate(selectedDate);
 
   // Инициализация диапазона дат (-14 дней .. +30 дней от сегодняшнего дня)
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     const today = getTodayDate();
     const start = addDays(today, -14);
     const end = addDays(today, 30);
@@ -121,10 +125,11 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
     getDaysInfo(start, end)
       .then(map => {
         setDaysOffMap(map);
-        onHolidaysLoadingChange?.(false);
       })
       .catch(() => {
         setDaysOffMap(getLocalWeekends(start, end));
+      })
+      .finally(() => {
         onHolidaysLoadingChange?.(false);
       });
   }, [onLoadRange, onHolidaysLoadingChange]);
