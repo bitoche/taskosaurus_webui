@@ -186,8 +186,31 @@
   color: #4ade80;
 }
 
-.copy-icon {
+.copy-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-icon,
+.check-icon {
   flex-shrink: 0;
+}
+
+.copy-code-btn .copy-icon {
+  display: block;
+}
+
+.copy-code-btn .check-icon {
+  display: none;
+}
+
+.copy-code-btn.copied .copy-icon {
+  display: none;
+}
+
+.copy-code-btn.copied .check-icon {
+  display: block;
 }
 
 .code-block-wrapper pre,
