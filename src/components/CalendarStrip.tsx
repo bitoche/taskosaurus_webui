@@ -11,6 +11,7 @@ import {
 import DayCard, { DayCardTask } from './DayCard';
 import { Task, TaskTag, TaskPriority } from '../types';
 import { getDaysInfo, getLocalWeekends } from '../holidays';
+import { getTaskClosedDateKey, getCompletionDiff } from '../utils/taskDate';
 import { Loader2 } from 'lucide-react';
 import './CalendarStrip.css';
 
@@ -41,7 +42,7 @@ interface Props {
   tasks: Task[];
   onAddTask: (date: string) => void;
   onEditTask: (task: Task) => void;
-  onMoveTask: (taskId: number, newDueDate: string) => void;
+  onMoveTask: (taskId: number, newDueDate: string, sourceDate?: string) => void;
   onLoadRange: (from: string, to: string) => Promise<Task[]>;
   onToggleStatus: (taskId: number, newStatus: number) => void;
   taskTagsMap?: Map<number, TaskTag[]>;
@@ -54,6 +55,7 @@ export interface CalendarStripRef {
   scrollToDate: (dateStr: string, taskId?: number) => void;
   scrollLeft: () => void;
   scrollRight: () => void;
+  getDateRange?: () => { from: string; to: string } | null;
 }
 
 const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
@@ -371,11 +373,13 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       const isCompleted = task.task_status === 2;
       const isActive = task.task_status === 1;
       
-      // Определяем целевую дату отображения
+      const closedKey = getTaskClosedDateKey(task.closed_dttm);
+
+      // Определяем целевую дату отображения:
+      // Завершенная задача всегда остается на дате закрытия (или на назначенной дате / сегодня, если closed_dttm отсутствует)
       let targetKey: string;
-      if (isCompleted && task.closed_dttm) {
-        // Завершённая задача с closed_dttm — показываем на дате закрытия
-        targetKey = task.closed_dttm.slice(0, 10);
+      if (isCompleted) {
+        targetKey = closedKey || originalKey || todayKey;
       } else if (originalKey && isActive) {
         // Активная просроченная задача — показываем на сегодня
         const parts = originalKey.split('-');
@@ -395,17 +399,11 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
       // Показываем основную таску
       if (loadedDateKeys.has(targetKey) || targetKey === '') {
         if (!map.has(targetKey)) map.set(targetKey, []);
-        // Вычисляем overdueClosed для календаря
-        const isCompleted = task.task_status === 2;
-        let overdueClosed = 0;
-        if (isCompleted && task.due_date && task.closed_dttm) {
-          const parts = task.due_date.split('-');
-          const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-          const closed = new Date(task.closed_dttm);
-          const diffDays = Math.ceil((closed.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-          overdueClosed = diffDays > 0 ? diffDays : 0;
-        }
-        map.get(targetKey)!.push({ ...task, isGhost: false, overdueClosed });
+        // Вычисляем overdueClosed и earlyClosed для календаря
+        const { overdueClosed, earlyClosed } = isCompleted
+          ? getCompletionDiff(task.due_date, task.closed_dttm)
+          : { overdueClosed: 0, earlyClosed: 0 };
+        map.get(targetKey)!.push({ ...task, isGhost: false, overdueClosed, earlyClosed });
       }
       
       // Ghost-таска только для активных просроченных задач (не завершённых)
@@ -415,6 +413,8 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
           ...task,
           isGhost: true,
           ghostTargetDate: targetKey,
+          overdueClosed: 0,
+          earlyClosed: 0,
         });
       }
     }
@@ -448,6 +448,13 @@ const CalendarStrip = forwardRef<CalendarStripRef, Props>(({
     },
     scrollRight: () => {
       if (stripRef.current) stripRef.current.scrollLeft += 280;
+    },
+    getDateRange: () => {
+      if (dates.length === 0) return null;
+      return {
+        from: formatLocalDate(dates[0]),
+        to: formatLocalDate(dates[dates.length - 1]),
+      };
     },
   }));
 

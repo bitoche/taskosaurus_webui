@@ -199,34 +199,6 @@ const App: React.FC = () => {
     }
   }, [currentUser, addToast]);
 
-  // === Полное обновление задач за период (слияние без мерцания) ===
-  const refreshTasksForRange = useCallback(async (from: string, to: string) => {
-    if (!currentUser) return [];
-    try {
-      const fetchedTasks = await fetchTasksRange(from, to);
-      setTasks(prev => {
-        const fetchedMap = new Map(fetchedTasks.map(t => [t.task_id, t]));
-        const updated = prev.map(t => fetchedMap.get(t.task_id) || t);
-        const existingIds = new Set(prev.map(t => t.task_id));
-        for (const t of fetchedTasks) {
-          if (!existingIds.has(t.task_id)) {
-            updated.push(t);
-          }
-        }
-        return updated;
-      });
-      return fetchedTasks;
-    } catch (err: any) {
-      if (err?.status === 401) {
-        setCurrentUser(null);
-        return [];
-      }
-      console.error('Failed to refresh tasks range', err);
-      addToast('error-refresh-tasks', { type: 'error', message: `Ошибка обновления задач: ${err?.message || err}` });
-      return [];
-    }
-  }, [currentUser, addToast]);
-
   const loadTagsData = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -267,39 +239,92 @@ const App: React.FC = () => {
     }
   }, [currentUser, addToast]);
 
-  // === Обновление задач (ручное или автоматическое фоновое) ===
+  // === Обновление задач (ручное или автоматическое фоновое с примирением удалений) ===
   const handleRefreshTasks = useCallback(async (isSilent = false) => {
     if (!currentUser) return;
     if (!isSilent) setRefreshing(true);
     try {
+      const calendarRange = calendarRef.current?.getDateRange?.();
       const today = new Date();
-      const from = new Date(today);
-      from.setDate(today.getDate() - 30);
-      const to = new Date(today);
-      to.setDate(today.getDate() + 30);
-      const fromStr = formatLocalDate(from);
-      const toStr = formatLocalDate(to);
-      const [, noDateTasks] = await Promise.all([
-        refreshTasksForRange(fromStr, toStr),
+      const defaultFrom = new Date(today);
+      defaultFrom.setDate(today.getDate() - 30);
+      const defaultTo = new Date(today);
+      defaultTo.setDate(today.getDate() + 30);
+      const defaultFromStr = formatLocalDate(defaultFrom);
+      const defaultToStr = formatLocalDate(defaultTo);
+
+      const fromStr = calendarRange && calendarRange.from < defaultFromStr ? calendarRange.from : defaultFromStr;
+      const toStr = calendarRange && calendarRange.to > defaultToStr ? calendarRange.to : defaultToStr;
+
+      const [rangeTasks, noDateTasks] = await Promise.all([
+        fetchTasksRange(fromStr, toStr),
         fetchNoDateTasks(),
         loadTagsData(),
         loadPrioritiesData(),
       ]);
-      if (noDateTasks) {
-        setTasks(prev => {
-          const noDateMap = new Map(noDateTasks.map(t => [t.task_id, t]));
-          const preserved = prev
-            .filter(t => t.task_id < 0 || t.due_date !== null || noDateMap.has(t.task_id))
-            .map(t => noDateMap.get(t.task_id) || t);
-          const existingIds = new Set(preserved.map(t => t.task_id));
-          for (const t of noDateTasks) {
-            if (!existingIds.has(t.task_id)) {
-              preserved.push(t);
+
+      const fetchedMap = new Map<number, Task>((rangeTasks as Task[]).map(t => [t.task_id, t]));
+      const noDateMap = new Map<number, Task>((noDateTasks as Task[]).map(t => [t.task_id, t]));
+
+      setTasks(prev => {
+        const next: Task[] = [];
+        const processedIds = new Set<number>();
+
+        for (const t of prev) {
+          // Оптимистичные локальные задачи сохраняем
+          if (t.task_id < 0) {
+            next.push(t);
+            processedIds.add(t.task_id);
+            continue;
+          }
+
+          const taskDueDate = t.due_date ?? null;
+          if (taskDueDate === null) {
+            // Без даты: если есть в noDateMap — обновляем, если нет — удалена
+            if (noDateMap.has(t.task_id)) {
+              next.push(noDateMap.get(t.task_id)!);
+              processedIds.add(t.task_id);
+            }
+          } else if (
+            (taskDueDate >= fromStr && taskDueDate <= toStr) ||
+            (t.task_status === 1 && taskDueDate < defaultFromStr)
+          ) {
+            // Была в синхронизируемом диапазоне или отображалась как просроченная на сегодня:
+            // если есть на сервере — обновляем, если нет — значит удалена
+            if (fetchedMap.has(t.task_id)) {
+              next.push(fetchedMap.get(t.task_id)!);
+              processedIds.add(t.task_id);
+            }
+          } else {
+            // За пределами диапазона
+            if (fetchedMap.has(t.task_id)) {
+              next.push(fetchedMap.get(t.task_id)!);
+              processedIds.add(t.task_id);
+            } else {
+              next.push(t);
+              processedIds.add(t.task_id);
             }
           }
-          return preserved;
-        });
-      }
+        }
+
+        // Новые задачи из диапазона
+        for (const t of rangeTasks) {
+          if (!processedIds.has(t.task_id)) {
+            next.push(t);
+            processedIds.add(t.task_id);
+          }
+        }
+
+        // Новые задачи без даты
+        for (const t of noDateTasks) {
+          if (!processedIds.has(t.task_id)) {
+            next.push(t);
+            processedIds.add(t.task_id);
+          }
+        }
+
+        return next;
+      });
     } catch (err: any) {
       if (err?.status === 401) {
         setCurrentUser(null);
@@ -314,7 +339,7 @@ const App: React.FC = () => {
         setTimeout(() => setRefreshing(false), 400);
       }
     }
-  }, [currentUser, refreshTasksForRange, loadTagsData, loadPrioritiesData, addToast]);
+  }, [currentUser, loadTagsData, loadPrioritiesData, addToast]);
 
   // === Инициализация данных только при наличии авторизованного пользователя ===
   useEffect(() => {
@@ -492,12 +517,44 @@ const App: React.FC = () => {
     }
   };
 
-  const handleMoveTask = (taskId: number, newDueDate: string) => {
+  const handleMoveTask = (taskId: number, newDueDate: string, sourceDate?: string) => {
     const taskToUpdate = tasks.find(t => t.task_id === taskId);
     if (!taskToUpdate) return;
     const oldDueDate = taskToUpdate.due_date;
     const normalizedDueDate = newDueDate && newDueDate.trim() !== '' ? newDueDate : null;
-    if (oldDueDate === normalizedDueDate) return;
+
+    const todayStr = formatLocalDate(new Date());
+
+    // Проверяем, просрочена ли активная задача (в интерфейсе она отображается на сегодня)
+    const isOverdue = taskToUpdate.task_status === 1 && !!oldDueDate && oldDueDate < todayStr;
+
+    // Определяем дату, на которой карточка визуально находилась перед переносом
+    const effectiveSourceDate = sourceDate !== undefined
+      ? sourceDate
+      : (isOverdue ? todayStr : (oldDueDate || ''));
+
+    const effectiveTargetDate = normalizedDueDate || '';
+
+    // Перетаскивание в рамках одного дня
+    if (effectiveSourceDate === effectiveTargetDate) {
+      if (isOverdue && effectiveTargetDate === todayStr) {
+        // Просроченная задача перетащена в рамках сегодняшнего дня (тоже на сегодня):
+        // Спрашиваем пользователя, действительно ли он хочет назначить ее на сегодняшний день
+        const confirmed = window.confirm(
+          `Задача "${taskToUpdate.title}" просрочена (планировалась на ${oldDueDate ?? ''}).\nДействительно назначить ее на сегодняшний день (${todayStr})?`
+        );
+        if (!confirmed) {
+          return;
+        }
+      } else {
+        // Обычное перетаскивание в рамках одного дня — не апдейтим
+        return;
+      }
+    } else {
+      if (oldDueDate === normalizedDueDate) {
+        return;
+      }
+    }
 
     // Моментально обновляем положение карточки
     setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: normalizedDueDate } : t)));
@@ -545,16 +602,20 @@ const App: React.FC = () => {
       task_priority_id: taskToUpdate.task_priority_id ?? null,
     };
 
-    updateTask(taskId, updateDto).catch((err: any) => {
-      console.error('Failed to toggle status', err);
-      setTasks(prev =>
-        prev.map(t => (t.task_id === taskId ? { ...t, task_status: oldStatus, closed_dttm: oldClosedDttm } : t))
-      );
-      addToast(`error-task-status-${taskId}`, {
-        type: 'error',
-        message: `Ошибка изменения статуса: ${err?.message || err}`,
+    updateTask(taskId, updateDto)
+      .then(updated => {
+        setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, ...updated } : t)));
+      })
+      .catch((err: any) => {
+        console.error('Failed to toggle status', err);
+        setTasks(prev =>
+          prev.map(t => (t.task_id === taskId ? { ...t, task_status: oldStatus, closed_dttm: oldClosedDttm } : t))
+        );
+        addToast(`error-task-status-${taskId}`, {
+          type: 'error',
+          message: `Ошибка изменения статуса: ${err?.message || err}`,
+        });
       });
-    });
   };
 
   const closeModal = () => setModalState({ isOpen: false });

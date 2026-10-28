@@ -407,6 +407,17 @@ body {
   align-items: center;
   gap: 4px;
 }
+.early-badge-closed {
+  background: #10b981;
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .completed-badge {
   background: #28a745;
   color: white;

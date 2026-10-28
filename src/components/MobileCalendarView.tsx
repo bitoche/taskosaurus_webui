@@ -22,6 +22,7 @@ import { getDaysInfo, getLocalWeekends } from '../holidays';
 import TaskTags from './TaskTags';
 import { CalendarStripRef } from './CalendarStrip';
 import { getContrastTextColor } from '../utils/color';
+import { getTaskClosedDateKey, getCompletionDiff } from '../utils/taskDate';
 import './MobileCalendarView.css';
 
 interface Props {
@@ -83,6 +84,7 @@ export type MobileTask = Task & {
   isGhost?: boolean;
   ghostTargetDate?: string;
   overdueClosed?: number;
+  earlyClosed?: number;
 };
 
 const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
@@ -184,20 +186,13 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
       isOverdue = dueDateObj < today;
     }
 
-    let overdueClosed = 0;
-    if (isCompleted && t.due_date && t.closed_dttm) {
-      const parts = t.due_date.split('-');
-      const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      const closed = new Date(t.closed_dttm);
-      const diffDays = Math.ceil((closed.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-      overdueClosed = diffDays > 0 ? diffDays : 0;
-    }
+    const closedKey = getTaskClosedDateKey(t.closed_dttm);
 
-    // Определяем целевую дату отображения
+    // Определяем целевую дату отображения:
+    // Завершенная задача всегда остается на дате закрытия (или на назначенной дате / сегодня)
     let targetKey: string;
-    if (isCompleted && t.closed_dttm) {
-      // Завершённая задача с closed_dttm — показываем на дате закрытия
-      targetKey = t.closed_dttm.slice(0, 10);
+    if (isCompleted) {
+      targetKey = closedKey || originalKey || todayKey;
     } else if (originalKey && isActive && isOverdue) {
       // Активная просроченная задача переносится на СЕГОДНЯ
       targetKey = todayKey;
@@ -205,13 +200,17 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
       targetKey = originalKey;
     }
 
+    const { overdueClosed, earlyClosed } = isCompleted
+      ? getCompletionDiff(t.due_date, t.closed_dttm)
+      : { overdueClosed: 0, earlyClosed: 0 };
+
     if (!targetKey) {
-      noDateTasks.push({ ...t, isGhost: false, overdueClosed });
+      noDateTasks.push({ ...t, isGhost: false, overdueClosed, earlyClosed });
     } else {
       if (!tasksByDate.has(targetKey)) {
         tasksByDate.set(targetKey, []);
       }
-      tasksByDate.get(targetKey)!.push({ ...t, isGhost: false, overdueClosed });
+      tasksByDate.get(targetKey)!.push({ ...t, isGhost: false, overdueClosed, earlyClosed });
     }
 
     // Ghost-таска только для активных просроченных задач на их оригинальной дате
@@ -224,6 +223,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
         isGhost: true,
         ghostTargetDate: targetKey,
         overdueClosed: 0,
+        earlyClosed: 0,
       });
     }
   }
@@ -275,6 +275,13 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
     },
     scrollLeft: () => navigateDay(-1),
     scrollRight: () => navigateDay(1),
+    getDateRange: () => {
+      if (dates.length === 0) return null;
+      return {
+        from: formatLocalDate(dates[0]),
+        to: formatLocalDate(dates[dates.length - 1]),
+      };
+    },
   }));
 
   const isTodaySelected = selectedDateStr === todayStr;
@@ -322,6 +329,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
     const priority = task.task_priority_id != null ? priorityMap.get(task.task_priority_id) : null;
     const hasLink = task.link_to_taskmanager && task.link_to_taskmanager.trim() !== '';
     const overdueClosed = task.overdueClosed || 0;
+    const earlyClosed = task.earlyClosed || 0;
 
     return (
       <div
@@ -353,6 +361,11 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
             {isCompleted && overdueClosed > 0 && (
               <span className="overdue-badge-closed" title={`Закрыто с опозданием на ${overdueClosed} дн.`}>
                 <Gauge size={13} /> {overdueClosed} дн.
+              </span>
+            )}
+            {isCompleted && earlyClosed > 0 && (
+              <span className="early-badge-closed" title={`Закрыто с опережением на ${earlyClosed} дн.`}>
+                <Gauge size={13} /> {earlyClosed} дн.
               </span>
             )}
             {priority && (

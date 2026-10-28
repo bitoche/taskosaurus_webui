@@ -353,6 +353,15 @@
   background: rgba(255, 193, 7, 0.25);
 }
 
+.date-badge-early-closed {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.date-badge-early-closed:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
 /* Заглушка для пустой даты */
 .date-placeholder {
   color: var(--task-list-no-tasks);

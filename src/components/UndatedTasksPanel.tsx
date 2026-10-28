@@ -9,7 +9,7 @@ interface UndatedTasksPanelProps {
   onToggleOpen: () => void;
   onAddTask: () => void;
   onEditTask: (task: Task) => void;
-  onMoveTask: (taskId: number, newDueDate: string) => void;
+  onMoveTask: (taskId: number, newDueDate: string, sourceDate?: string) => void;
   onToggleStatus: (taskId: number, currentStatus: number) => void;
   onRemoveTagFromTask?: (taskId: number, tagId: number) => void;
   taskTagsMap?: Map<number, TaskTag[]>;
@@ -74,9 +74,10 @@ export const UndatedTasksPanel: React.FC<UndatedTasksPanelProps> = ({
     e.preventDefault();
     setIsDragOver(false);
     const taskIdStr = e.dataTransfer.getData('text/plain');
+    const sourceDate = e.dataTransfer.getData('application/x-source-date') || undefined;
     const taskId = parseInt(taskIdStr, 10);
     if (!isNaN(taskId)) {
-      onMoveTask(taskId, '');
+      onMoveTask(taskId, '', sourceDate);
     }
   };
 
@@ -158,6 +159,7 @@ export const UndatedTasksPanel: React.FC<UndatedTasksPanelProps> = ({
                     draggable
                     onDragStart={(e) => {
                       e.dataTransfer.setData('text/plain', task.task_id.toString());
+                      e.dataTransfer.setData('application/x-source-date', '');
                       e.dataTransfer.effectAllowed = 'move';
                     }}
                     onClick={(e) => {

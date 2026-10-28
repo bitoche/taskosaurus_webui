@@ -10,7 +10,8 @@ import {
   SortingState,
   flexRender,
 } from '@tanstack/react-table';
-import { CheckCircle2, AlertCircle, Search, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Gauge, Search, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { getCompletionDiff } from '../utils/taskDate';
 import './TaskList.css';
 
 interface Props {
@@ -73,24 +74,17 @@ const TaskList: React.FC<Props> = ({ tasks, taskTagsMap, onTaskClick, onToggleSt
 
       // Просрочка при закрытии: задача завершена, closed_dttm заполнено
       let overdueClosed = 0;
+      let earlyClosed = 0;
       if (isCompleted && dueUtc !== null && task.closed_dttm) {
-        const closedStr = task.closed_dttm.endsWith('Z') || task.closed_dttm.includes('+')
-          ? task.closed_dttm
-          : task.closed_dttm + 'Z';
-        const closedDate = new Date(closedStr);
-        const closedUtc = Date.UTC(
-          closedDate.getUTCFullYear(),
-          closedDate.getUTCMonth(),
-          closedDate.getUTCDate()
-        );
-        const diffDays = Math.floor((closedUtc - dueUtc) / (1000 * 60 * 60 * 24));
-        overdueClosed = diffDays > 0 ? diffDays : 0;
+        const diff = getCompletionDiff(task.due_date, task.closed_dttm);
+        overdueClosed = diff.overdueClosed;
+        earlyClosed = diff.earlyClosed;
       }
-      return { ...task, isCompleted, overdue, overdueClosed };
+      return { ...task, isCompleted, overdue, overdueClosed, earlyClosed };
     });
   }, [tasks]);
 
-  const columns = useMemo<ColumnDef<Task & { isCompleted: boolean; overdue: number; overdueClosed: number }>[]>(
+  const columns = useMemo<ColumnDef<Task & { isCompleted: boolean; overdue: number; overdueClosed: number; earlyClosed: number }>[]>(
     () => [
       {
         accessorKey: 'title',
@@ -130,11 +124,11 @@ const TaskList: React.FC<Props> = ({ tasks, taskTagsMap, onTaskClick, onToggleSt
           const dueDate = info.getValue() as string | null;
           const overdue = info.row.original.overdue;
           const overdueClosed = info.row.original.overdueClosed;
+          const earlyClosed = info.row.original.earlyClosed;
           const isCompleted = info.row.original.isCompleted;
           const formatted = dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString('ru-RU') : '—';
 
-          // Определяем состояние даты
-          let dueDateState: 'overdue' | 'overdueClosed' | 'normal' | null = null;
+          let dueDateState: 'overdue' | 'overdueClosed' | 'earlyClosed' | 'normal' | null = null;
           let tooltipText = '';
           if (overdue > 0 && !isCompleted) {
             dueDateState = 'overdue';
@@ -142,6 +136,9 @@ const TaskList: React.FC<Props> = ({ tasks, taskTagsMap, onTaskClick, onToggleSt
           } else if (overdueClosed > 0 && isCompleted) {
             dueDateState = 'overdueClosed';
             tooltipText = `Закрыта с опозданием на ${overdueClosed} дн.`;
+          } else if (earlyClosed > 0 && isCompleted) {
+            dueDateState = 'earlyClosed';
+            tooltipText = `Закрыта с опережением на ${earlyClosed} дн.`;
           }
 
           return (
@@ -151,7 +148,7 @@ const TaskList: React.FC<Props> = ({ tasks, taskTagsMap, onTaskClick, onToggleSt
             >
               {dueDate ? (
                 <div
-                  className={`date-badge ${dueDateState === 'overdue' ? 'date-badge-overdue' : ''} ${dueDateState === 'overdueClosed' ? 'date-badge-overdue-closed' : ''}`}
+                  className={`date-badge ${dueDateState === 'overdue' ? 'date-badge-overdue' : ''} ${dueDateState === 'overdueClosed' ? 'date-badge-overdue-closed' : ''} ${dueDateState === 'earlyClosed' ? 'date-badge-early-closed' : ''}`}
                   title={tooltipText || dueDate}
                 >
                   {dueDateState === 'overdue' && (
@@ -161,7 +158,12 @@ const TaskList: React.FC<Props> = ({ tasks, taskTagsMap, onTaskClick, onToggleSt
                   )}
                   {dueDateState === 'overdueClosed' && (
                     <span className="date-badge-icon date-badge-icon-closed">
-                      <AlertCircle size={14} />{overdueClosed}
+                      <Gauge size={14} />{overdueClosed}
+                    </span>
+                  )}
+                  {dueDateState === 'earlyClosed' && (
+                    <span className="date-badge-icon date-badge-icon-closed">
+                      <Gauge size={14} />{earlyClosed}
                     </span>
                   )}
                   <span className="date-badge-text">{formatted}</span>

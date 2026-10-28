@@ -7,6 +7,7 @@ export type DayCardTask = Task & {
   isGhost?: boolean;
   ghostTargetDate?: string;
   overdueClosed?: number;
+  earlyClosed?: number;
 };
 
 interface Props {
@@ -15,7 +16,7 @@ interface Props {
   isToday: boolean;
   onAddTask: () => void;
   onEditTask: (task: Task) => void;
-  onMoveTask: (taskId: number, newDueDate: string) => void;
+  onMoveTask: (taskId: number, newDueDate: string, sourceDate?: string) => void;
   onToggleStatus: (taskId: number, currentStatus: number) => void;
   onGhostClick?: (dateStr: string, taskId?: number) => void;
   onRemoveTagFromTask?: (taskId: number, tagId: number) => void;
@@ -70,6 +71,7 @@ const DayCard: React.FC<Props> = ({
 
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     e.dataTransfer.setData('text/plain', taskId.toString());
+    e.dataTransfer.setData('application/x-source-date', dateStr);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -80,8 +82,9 @@ const DayCard: React.FC<Props> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const taskId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    const sourceDate = e.dataTransfer.getData('application/x-source-date') || undefined;
     if (!isNaN(taskId)) {
-      onMoveTask(taskId, dateStr);
+      onMoveTask(taskId, dateStr, sourceDate);
     }
   };
 
@@ -142,6 +145,7 @@ const DayCard: React.FC<Props> = ({
             const isCompleted = task.task_status === 2;
             const isActive = task.task_status === 1;
             const overdueClosed = task.overdueClosed || 0;
+            const earlyClosed = task.earlyClosed || 0;
             const hasLink = task.link_to_taskmanager && task.link_to_taskmanager.trim() !== '';
             const taskTags = taskTagsMap?.get(task.task_id) || [];
 
@@ -158,8 +162,14 @@ const DayCard: React.FC<Props> = ({
               );
             } else if (isCompleted && overdueClosed > 0) {
               badge = (
-                <span title={`Дней просрочки при закрытии: ${overdueClosed}`} className="overdue-badge-closed">
+                <span title={`Закрыта с опозданием: ${overdueClosed} дн.`} className="overdue-badge-closed">
                   <Gauge size={12}/> {overdueClosed}
+                </span>
+              );
+            } else if (isCompleted && earlyClosed > 0) {
+              badge = (
+                <span title={`Закрыта с опережением: ${earlyClosed} дн.`} className="early-badge-closed">
+                  <Gauge size={12}/> {earlyClosed}
                 </span>
               );
             }
