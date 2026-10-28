@@ -1242,5 +1242,31 @@ input[type="color"]:hover {
     flex-wrap: wrap;
     justify-content: center;
   }
+
+  /* Предотвращение зума в Safari на iOS: размер шрифта полей ввода не менее 16px */
+  input,
+  textarea,
+  select,
+  .form-group input,
+  .form-group textarea,
+  .tag-editor-form input[type="text"],
+  .new-comment textarea,
+  .markdown-editor .markdown-textarea {
+    font-size: 16px !important;
+  }
+
+  /* Улучшение ощущения нативного приложения (без серых вспышек тапа и задержки) */
+  button,
+  input,
+  select,
+  textarea,
+  a,
+  .mobile-date-chip,
+  .mobile-task-card,
+  .task-tag {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
 }
+
 
