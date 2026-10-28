@@ -140,14 +140,17 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
       });
   }, [onLoadRange, onHolidaysLoadingChange]);
 
-  // Прокрутка выбранного чипа в центр ленты при изменении даты
+  // Прокрутка выбранного чипа в центр ленты при первой загрузке, изменении даты или смене режима
   useEffect(() => {
-    if (viewMode !== 'day' || !stripRef.current) return;
-    const selectedEl = stripRef.current.querySelector<HTMLElement>(`[data-chip-date="${selectedDateStr}"]`);
-    if (selectedEl) {
-      selectedEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    }
-  }, [selectedDateStr, viewMode]);
+    if (viewMode !== 'day' || !stripRef.current || dates.length === 0) return;
+    const timer = setTimeout(() => {
+      const selectedEl = stripRef.current?.querySelector<HTMLElement>(`[data-chip-date="${selectedDateStr}"]`);
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [selectedDateStr, viewMode, dates]);
 
   // Приоритеты
   const priorityMap = new Map<number, TaskPriority>();
@@ -245,6 +248,10 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
   const jumpToToday = () => {
     setSelectedDate(getTodayDate());
     setViewMode('day');
+    const todayEl = stripRef.current?.querySelector<HTMLElement>(`[data-chip-date="${todayStr}"]`);
+    if (todayEl) {
+      todayEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
   };
 
   useImperativeHandle(ref, () => ({
@@ -254,6 +261,12 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
         const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
         setSelectedDate(d);
         setViewMode('day');
+        setTimeout(() => {
+          const el = stripRef.current?.querySelector<HTMLElement>(`[data-chip-date="${dateStr}"]`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }
+        }, 50);
         if (taskId) {
           setHighlightedTaskId(taskId);
           setTimeout(() => setHighlightedTaskId(null), 2500);
@@ -417,9 +430,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
         >
           <Inbox size={18} />
           <span>Без даты</span>
-          {noDateTasks.length > 0 && (
-            <span className="mobile-tab-badge">{noDateTasks.length}</span>
-          )}
+          <span className="mobile-tab-badge">{noDateTasks.length}</span>
         </button>
       </div>
 

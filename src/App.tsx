@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  fetchTasksRange, createTask, updateTask, deleteTask,
+  fetchTasksRange, fetchNoDateTasks, createTask, updateTask, deleteTask,
   fetchAllTags, fetchTaskTagsXTask,
   assignTagToTask, unassignTagFromTask, createTag,
   deleteTagGlobally, updateTag,
@@ -13,6 +13,7 @@ import packageJson from '../package.json';
 import { Task, CreateTaskDTO, UpdateTaskDTO, TaskTag, TaskPriority, User } from './types';
 import CalendarStrip, { CalendarStripRef } from './components/CalendarStrip';
 import MobileCalendarView from './components/MobileCalendarView';
+import UndatedTasksPanel from './components/UndatedTasksPanel';
 import TaskModal from './components/TaskModal';
 import TaskList from './components/TaskList';
 import SqlQueryModal from './components/SqlQueryModal';
@@ -47,6 +48,7 @@ const App: React.FC = () => {
     return typeof window !== 'undefined' && window.innerWidth <= 768;
   });
   const [isMobileTableOpen, setIsMobileTableOpen] = useState(false);
+  const [isUndatedSectionOpen, setIsUndatedSectionOpen] = useState(false);
 
   const toggleViewMode = () => {
     setIsMobileView(prev => {
@@ -277,11 +279,27 @@ const App: React.FC = () => {
       to.setDate(today.getDate() + 30);
       const fromStr = formatLocalDate(from);
       const toStr = formatLocalDate(to);
-      await Promise.all([
+      const [, noDateTasks] = await Promise.all([
         refreshTasksForRange(fromStr, toStr),
+        fetchNoDateTasks(),
         loadTagsData(),
         loadPrioritiesData(),
       ]);
+      if (noDateTasks) {
+        setTasks(prev => {
+          const noDateMap = new Map(noDateTasks.map(t => [t.task_id, t]));
+          const preserved = prev
+            .filter(t => t.task_id < 0 || t.due_date !== null || noDateMap.has(t.task_id))
+            .map(t => noDateMap.get(t.task_id) || t);
+          const existingIds = new Set(preserved.map(t => t.task_id));
+          for (const t of noDateTasks) {
+            if (!existingIds.has(t.task_id)) {
+              preserved.push(t);
+            }
+          }
+          return preserved;
+        });
+      }
     } catch (err: any) {
       if (err?.status === 401) {
         setCurrentUser(null);
@@ -386,7 +404,7 @@ const App: React.FC = () => {
         title: taskData.title ?? undefined,
         description: taskData.description ?? undefined,
         link_to_taskmanager: taskData.link_to_taskmanager ?? undefined,
-        due_date: taskData.due_date ?? undefined,
+        due_date: taskData.due_date !== undefined ? taskData.due_date : null,
         closed_dttm: taskData.closed_dttm ?? undefined,
         task_status: taskData.task_status ?? undefined,
         task_priority_id: taskData.task_priority_id ?? undefined,
@@ -478,15 +496,18 @@ const App: React.FC = () => {
     const taskToUpdate = tasks.find(t => t.task_id === taskId);
     if (!taskToUpdate) return;
     const oldDueDate = taskToUpdate.due_date;
+    const normalizedDueDate = newDueDate && newDueDate.trim() !== '' ? newDueDate : null;
+    if (oldDueDate === normalizedDueDate) return;
+
     // Моментально обновляем положение карточки
-    setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: newDueDate } : t)));
+    setTasks(prev => prev.map(t => (t.task_id === taskId ? { ...t, due_date: normalizedDueDate } : t)));
 
     const updateDto: UpdateTaskDTO = {
       task_id: taskId,
       title: taskToUpdate.title,
       description: taskToUpdate.description,
       link_to_taskmanager: taskToUpdate.link_to_taskmanager,
-      due_date: newDueDate,
+      due_date: normalizedDueDate,
       task_status: taskToUpdate.task_status,
       task_priority_id: taskToUpdate.task_priority_id ?? null,
     };
@@ -815,19 +836,33 @@ const App: React.FC = () => {
             onHolidaysLoadingChange={handleHolidaysLoadingChange}
           />
         ) : (
-          <CalendarStrip
-            ref={calendarRef}
-            tasks={filteredTasks}
-            onAddTask={handleAddTask}
-            onEditTask={handleEditTask}
-            onMoveTask={handleMoveTask}
-            onLoadRange={loadTasksForRange}
-            onToggleStatus={handleToggleStatus}
-            taskTagsMap={taskTagsMap}
-            onRemoveTag={handleRemoveTagFromTask}
-            allPriorities={allPriorities}
-            onHolidaysLoadingChange={handleHolidaysLoadingChange}
-          />
+          <>
+            <CalendarStrip
+              ref={calendarRef}
+              tasks={filteredTasks}
+              onAddTask={handleAddTask}
+              onEditTask={handleEditTask}
+              onMoveTask={handleMoveTask}
+              onLoadRange={loadTasksForRange}
+              onToggleStatus={handleToggleStatus}
+              taskTagsMap={taskTagsMap}
+              onRemoveTag={handleRemoveTagFromTask}
+              allPriorities={allPriorities}
+              onHolidaysLoadingChange={handleHolidaysLoadingChange}
+            />
+            <UndatedTasksPanel
+              tasks={filteredTasks}
+              isOpen={isUndatedSectionOpen}
+              onToggleOpen={() => setIsUndatedSectionOpen(prev => !prev)}
+              onAddTask={() => handleAddTask('')}
+              onEditTask={handleEditTask}
+              onMoveTask={handleMoveTask}
+              onToggleStatus={handleToggleStatus}
+              onRemoveTagFromTask={handleRemoveTagFromTask}
+              taskTagsMap={taskTagsMap}
+              allPriorities={allPriorities}
+            />
+          </>
         )}
         <TagManager
           allTags={allTags}

@@ -117,6 +117,20 @@ export async function fetchTasksRange(dateFrom: string, dateTo: string): Promise
   }));
 }
 
+export async function fetchNoDateTasks(): Promise<Task[]> {
+  const path = `${API_BASE}/tasks?no_date=true`;
+  const tasks = await request<Task[]>(path);
+  console.log(`[API ←] ${path} received ${tasks.length} tasks`);
+  return tasks.map(task => ({
+    ...task,
+    description: task.description ?? null,
+    link_to_taskmanager: task.link_to_taskmanager ?? null,
+    due_date: task.due_date ? task.due_date.slice(0, 10) : null,
+    closed_dttm: task.closed_dttm ? task.closed_dttm.slice(0, 19) : null,
+    created_at: task.created_at ? task.created_at.slice(0, 19) : null,
+  }));
+}
+
 export async function createTask(task: CreateTaskDTO): Promise<Task> {
   const path = `${API_BASE}/tasks`;
   const payload = {
