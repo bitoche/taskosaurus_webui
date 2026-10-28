@@ -79,6 +79,12 @@ function getOverdueDays(dueDateStr: string | null | undefined): number {
   return diffDays > 0 ? diffDays : 0;
 }
 
+export type MobileTask = Task & {
+  isGhost?: boolean;
+  ghostTargetDate?: string;
+  overdueClosed?: number;
+};
+
 const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
   tasks,
   onAddTask,
@@ -153,29 +159,76 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
     }
   }
 
-  // Группировка задач по датам
-  const tasksByDate = new Map<string, Task[]>();
-  const noDateTasks: Task[] = [];
+  // Группировка задач по датам с учетом переноса активных просроченных на СЕГОДНЯ
+  const tasksByDate = new Map<string, MobileTask[]>();
+  const noDateTasks: MobileTask[] = [];
+
+  const today = getTodayDate();
+  const todayKey = formatLocalDate(today);
 
   for (const t of tasks) {
-    let targetDate = t.due_date;
-    // Если задача выполнена и имеет closed_dttm
-    if (t.task_status === 2 && t.closed_dttm) {
-      targetDate = t.closed_dttm.slice(0, 10);
+    let originalKey = '';
+    if (t.due_date) {
+      originalKey = t.due_date.slice(0, 10);
     }
-    if (!targetDate) {
-      noDateTasks.push(t);
+    const isCompleted = t.task_status === 2;
+    const isActive = t.task_status !== 2;
+
+    let isOverdue = false;
+    if (originalKey && isActive) {
+      const parts = originalKey.split('-');
+      const dueDateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      isOverdue = dueDateObj < today;
+    }
+
+    let overdueClosed = 0;
+    if (isCompleted && t.due_date && t.closed_dttm) {
+      const parts = t.due_date.split('-');
+      const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      const closed = new Date(t.closed_dttm);
+      const diffDays = Math.ceil((closed.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+      overdueClosed = diffDays > 0 ? diffDays : 0;
+    }
+
+    // Определяем целевую дату отображения
+    let targetKey: string;
+    if (isCompleted && t.closed_dttm) {
+      // Завершённая задача с closed_dttm — показываем на дате закрытия
+      targetKey = t.closed_dttm.slice(0, 10);
+    } else if (originalKey && isActive && isOverdue) {
+      // Активная просроченная задача переносится на СЕГОДНЯ
+      targetKey = todayKey;
     } else {
-      if (!tasksByDate.has(targetDate)) {
-        tasksByDate.set(targetDate, []);
+      targetKey = originalKey;
+    }
+
+    if (!targetKey) {
+      noDateTasks.push({ ...t, isGhost: false, overdueClosed });
+    } else {
+      if (!tasksByDate.has(targetKey)) {
+        tasksByDate.set(targetKey, []);
       }
-      tasksByDate.get(targetDate)!.push(t);
+      tasksByDate.get(targetKey)!.push({ ...t, isGhost: false, overdueClosed });
+    }
+
+    // Ghost-таска только для активных просроченных задач на их оригинальной дате
+    if (isActive && isOverdue && originalKey && originalKey !== targetKey) {
+      if (!tasksByDate.has(originalKey)) {
+        tasksByDate.set(originalKey, []);
+      }
+      tasksByDate.get(originalKey)!.push({
+        ...t,
+        isGhost: true,
+        ghostTargetDate: targetKey,
+        overdueClosed: 0,
+      });
     }
   }
 
-  // Сортировка задач внутри дня по приоритету
-  const sortTasks = (taskList: Task[]) => {
+  // Сортировка задач внутри дня по приоритету (ghost-таски в конце)
+  const sortTasks = (taskList: MobileTask[]) => {
     return [...taskList].sort((a, b) => {
+      if (a.isGhost !== b.isGhost) return a.isGhost ? 1 : -1;
       const wA = a.task_priority_id != null ? (priorityWeightMap.get(a.task_priority_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
       const wB = b.task_priority_id != null ? (priorityWeightMap.get(b.task_priority_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
       if (wA !== wB) return wA - wB;
@@ -224,23 +277,38 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
   };
 
   // Рендер карточки отдельной задачи в мобильном представлении
-  const renderTaskItem = (task: Task) => {
+  const renderTaskItem = (task: MobileTask) => {
+    if (task.isGhost) {
+      return (
+        <div
+          key={`ghost-${task.task_id}`}
+          className="mobile-task-card ghost-task"
+          onClick={() => jumpToToday()}
+          title="Просроченная задача перенесена на сегодня. Нажмите для перехода к сегодня."
+        >
+          <div className="mobile-task-content" style={{ paddingLeft: '4px' }}>
+            <div className="mobile-task-header-row">
+              <span className="overdue-badge" title="Перенесена на сегодня">
+                <AlertCircle size={13} /> перенесена на сегодня
+              </span>
+            </div>
+            <div className="mobile-task-title" style={{ fontStyle: 'italic', opacity: 0.85 }}>
+              {task.title}
+            </div>
+            <div className="mobile-ghost-hint">Нажмите для перехода к сегодняшнему дню &rarr;</div>
+          </div>
+        </div>
+      );
+    }
+
     const isCompleted = task.task_status === 2;
-    const isActive = task.task_status === 1;
+    const isActive = task.task_status !== 2;
     const isHighlighted = highlightedTaskId === task.task_id;
     const overdue = getOverdueDays(task.due_date);
     const taskTags = taskTagsMap?.get(task.task_id) || [];
     const priority = task.task_priority_id != null ? priorityMap.get(task.task_priority_id) : null;
     const hasLink = task.link_to_taskmanager && task.link_to_taskmanager.trim() !== '';
-
-    let overdueClosed = 0;
-    if (isCompleted && task.due_date && task.closed_dttm) {
-      const parts = task.due_date.split('-');
-      const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      const closed = new Date(task.closed_dttm);
-      const diffDays = Math.ceil((closed.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-      overdueClosed = diffDays > 0 ? diffDays : 0;
-    }
+    const overdueClosed = task.overdueClosed || 0;
 
     return (
       <div
@@ -317,7 +385,12 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
 
   // Список дней для режима "Лента" (все дни с задачами + Сегодня)
   const allAgendaDateStrings = Array.from(
-    new Set([...Array.from(tasksByDate.keys()), todayStr])
+    new Set([
+      ...Array.from(tasksByDate.entries())
+        .filter(([_, list]) => list.some(t => !t.isGhost))
+        .map(([d]) => d),
+      todayStr,
+    ])
   ).sort();
 
   return (
@@ -389,7 +462,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
               const isSelected = dStr === selectedDateStr;
               const isToday = dStr === todayStr;
               const isOff = daysOffMap.get(dStr) || false;
-              const count = (tasksByDate.get(dStr) || []).length;
+              const count = (tasksByDate.get(dStr) || []).filter(t => !t.isGhost).length;
 
               return (
                 <div
@@ -418,8 +491,8 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
                 <div className="mobile-day-subtitle">
                   {isSelectedDayOff && <span className="mobile-holiday-pill">Выходной</span>}
                   <span>
-                    {tasksForSelectedDay.length > 0
-                      ? `Задач: ${tasksForSelectedDay.length}`
+                    {tasksForSelectedDay.filter(t => !t.isGhost).length > 0
+                      ? `Задач: ${tasksForSelectedDay.filter(t => !t.isGhost).length}`
                       : 'Нет запланированных задач'}
                   </span>
                 </div>
