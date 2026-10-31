@@ -880,17 +880,6 @@ const App: React.FC = () => {
               <LogOut size={18} />
             </button>
 
-            {/* Кнопка смены вида: только если вид не соответствует размеру экрана */}
-            {isMobileView !== isPhoneScreen && (
-              <button
-                className="nav-btn"
-                onClick={toggleViewMode}
-                title={isMobileView ? "Переключить на горизонтальный календарь" : "Переключить на мобильный вид"}
-              >
-                {isMobileView ? <Monitor size={18} /> : <Smartphone size={18} />}
-              </button>
-            )}
-
             <button className="nav-btn theme-toggle-btn" onClick={toggleTheme} title={isDark ? 'Светлая тема' : 'Темная тема'}>
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -1045,6 +1034,16 @@ const App: React.FC = () => {
         allPriorities={allPriorities}
       />
       <div className="fixed-buttons">
+        {/* Кнопка смены вида: появляется и пульсирует, когда режим не соответствует ширине экрана */}
+        {isMobileView !== isPhoneScreen && (
+          <button
+            className="view-mode-btn-fixed"
+            onClick={toggleViewMode}
+            title={isMobileView ? "Переключить на горизонтальный календарь" : "Переключить на мобильный вид"}
+          >
+            {isMobileView ? <Monitor size={20} /> : <Smartphone size={20} />}
+          </button>
+        )}
         <button className="today-btn-fixed" onClick={scrollToToday} title="Перейти к сегодняшнему дню">
           <Home size={20} />
         </button>
