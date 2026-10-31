@@ -1,6 +1,6 @@
 {
   "name": "calendar-frontend",
-  "version": "2.5.15",
+  "version": "2.5.16",
   "type": "module",
   "scripts": {
     "dev": "vite",

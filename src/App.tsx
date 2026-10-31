@@ -831,24 +831,11 @@ const App: React.FC = () => {
             <h1>Task-o-Saurus</h1>
           </div>
           <div className="nav-buttons">
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px',
-                borderRadius: 16,
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                color: 'var(--text-color, #4f46e5)',
-                fontSize: 12,
-                fontWeight: 600,
-                marginRight: 6,
-              }}
-            >
-              <UserIcon size={14} />
+            <div className="user-badge">
+              <UserIcon size={16} className="user-badge-icon" />
               <span>{currentUser.username}</span>
               {currentUser.role === 'admin' && (
-                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, background: '#f59e0b', color: '#fff', textTransform: 'uppercase', fontWeight: 700 }}>
+                <span className="user-role-badge">
                   Admin
                 </span>
               )}
