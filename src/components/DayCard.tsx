@@ -222,6 +222,10 @@ const DayCard: React.FC<Props> = ({
                     </div>
                   )}
                 </div>
+              
+                {task.task_id > 0 && (
+                  <span className="task-id-watermark">#{task.task_id}</span>
+                )}
               </div>
             );
           })
