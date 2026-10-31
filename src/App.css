@@ -244,7 +244,7 @@ body {
 /* Карточка дня */
 .day-card {
   flex: 0 0 auto;
-  width: 240px;
+  width: 330px;
   background: var(--bg-element);
   border-radius: 32px;
   box-shadow: var(--shadow-element);
@@ -525,15 +525,42 @@ footer,
   text-decoration: line-through;
   color: var(--text-completed);
 }
+.task-main-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-title-row {
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
+  line-height: 1.3;
+}
+
 .task-title-text {
   text-wrap: auto;
   color: var(--text-primary);
+  word-break: break-word;
 }
 .task-actions {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-top: 4px;
+  margin-top: 0;
+  flex-shrink: 0;
 }
 .task-actions button {
   min-width: 25px;

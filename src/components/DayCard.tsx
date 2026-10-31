@@ -133,8 +133,12 @@ const DayCard: React.FC<Props> = ({
                     onGhostClick?.(task.ghostTargetDate || '', task.task_id);
                   }}
                 >
-                  <div className="task-title">
-                    <span className="task-title-text">{task.title}</span>
+                  <div className="task-main-row">
+                    <div className="task-content">
+                      <div className="task-title-row">
+                        <span className="task-title-text">{task.title}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -186,21 +190,28 @@ const DayCard: React.FC<Props> = ({
                   onEditTask(task);
                 }}
               >
-                <div className="task-title">
-                  {badge}
-                  <span className="task-title-text">{task.title}</span>
-                  <div className="task-actions">
-                    <button
-                      className="status-toggle-btn"
-                      onClick={(e) => handleStatusToggle(e, task.task_id, task.task_status || 1)}
-                      title={isCompleted ? "Отметить как невыполненную" : "Отметить как выполненную"}
-                    >
-                      <CheckCircle2
-                        size={18}
-                        className={isCompleted ? "status-icon completed" : "status-icon incomplete"}
-                      />
-                    </button>
-                    {hasLink && (
+                <div className="task-main-row">
+                  <button
+                    className="status-toggle-btn"
+                    onClick={(e) => handleStatusToggle(e, task.task_id, task.task_status || 1)}
+                    title={isCompleted ? "Отметить как невыполненную" : "Отметить как выполненную"}
+                  >
+                    <CheckCircle2
+                      size={18}
+                      className={isCompleted ? "status-icon completed" : "status-icon incomplete"}
+                    />
+                  </button>
+                  <div className="task-content">
+                    <div className="task-title-row">
+                      {badge}
+                      <span className="task-title-text" title={task.title}>{task.title}</span>
+                    </div>
+                    {taskTags.length > 0 && (
+                      <TaskTags tags={taskTags} onRemove={onRemoveTagFromTask ? (tagId) => onRemoveTagFromTask(task.task_id, tagId) : undefined} maxVisible={5} />
+                    )}
+                  </div>
+                  {hasLink && (
+                    <div className="task-actions">
                       <button
                         className="link-btn"
                         onClick={(e) => handleOpenLink(e, task.link_to_taskmanager!)}
@@ -208,13 +219,9 @@ const DayCard: React.FC<Props> = ({
                       >
                         <ExternalLink size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-                {/* Отображение тегов с возможностью удалить тег с задачи */}
-                {taskTags.length > 0 && (
-                  <TaskTags tags={taskTags} onRemove={onRemoveTagFromTask ? (tagId) => onRemoveTagFromTask(task.task_id, tagId) : undefined} maxVisible={5} />
-                )}
               </div>
             );
           })

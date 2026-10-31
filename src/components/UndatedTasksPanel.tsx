@@ -167,25 +167,36 @@ export const UndatedTasksPanel: React.FC<UndatedTasksPanelProps> = ({
                       onEditTask(task);
                     }}
                   >
-                    <div className="task-title">
-                      <span className="task-title-text" title={task.title}>{task.title}</span>
-                      <div className="task-actions">
-                        <button
-                          type="button"
-                          className="status-toggle-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const newStatus = task.task_status === 2 ? 1 : 2;
-                            onToggleStatus(task.task_id, newStatus);
-                          }}
-                          title={isCompleted ? "Отметить как невыполненную" : "Отметить как выполненную"}
-                        >
-                          <CheckCircle2
-                            size={18}
-                            className={isCompleted ? "status-icon completed" : "status-icon incomplete"}
+                    <div className="task-main-row">
+                      <button
+                        type="button"
+                        className="status-toggle-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newStatus = task.task_status === 2 ? 1 : 2;
+                          onToggleStatus(task.task_id, newStatus);
+                        }}
+                        title={isCompleted ? "Отметить как невыполненную" : "Отметить как выполненную"}
+                      >
+                        <CheckCircle2
+                          size={18}
+                          className={isCompleted ? "status-icon completed" : "status-icon incomplete"}
+                        />
+                      </button>
+                      <div className="task-content">
+                        <div className="task-title-row">
+                          <span className="task-title-text" title={task.title}>{task.title}</span>
+                        </div>
+                        {taskTags.length > 0 && (
+                          <TaskTags
+                            tags={taskTags}
+                            onRemove={onRemoveTagFromTask ? (tagId) => onRemoveTagFromTask(task.task_id, tagId) : undefined}
+                            maxVisible={5}
                           />
-                        </button>
-                        {hasLink && (
+                        )}
+                      </div>
+                      {hasLink && (
+                        <div className="task-actions">
                           <button
                             type="button"
                             className="link-btn"
@@ -194,16 +205,9 @@ export const UndatedTasksPanel: React.FC<UndatedTasksPanelProps> = ({
                           >
                             <ExternalLink size={16} />
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                    {taskTags.length > 0 && (
-                      <TaskTags
-                        tags={taskTags}
-                        onRemove={onRemoveTagFromTask ? (tagId) => onRemoveTagFromTask(task.task_id, tagId) : undefined}
-                        maxVisible={5}
-                      />
-                    )}
                   </div>
                 );
               })}
