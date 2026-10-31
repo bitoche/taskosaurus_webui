@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { executeTaskQuery } from '../api';
 import { SqlQueryResult, User } from '../types';
 import {
@@ -32,34 +32,42 @@ interface QueryPreset {
   description: string;
 }
 
-const PRESETS: QueryPreset[] = [
-  {
-    name: 'Все активные задачи',
-    query: 'SELECT * FROM task WHERE task_status = 1 ORDER BY due_date ASC',
-    description: 'Активные (незавершенные) задачи, отсортированные по сроку выполнения'
-  },
-  {
-    name: 'Задачи с приоритетами',
-    query: 'SELECT t.task_id, t.title, t.due_date, p.priority_name, p.priority_color FROM task t LEFT JOIN task_priority p ON t.task_priority_id = p.priority_id',
-    description: 'Список задач с названиями и цветами приоритетов'
-  },
-  {
-    name: 'Задачи по тегам',
-    query: 'SELECT t.task_id, t.title, tg.tag_text, tg.tag_color FROM task t JOIN task_tag_x_task xt ON t.task_id = xt.task_id JOIN task_tag tg ON xt.task_tag_id = tg.task_tag_id',
-    description: 'Задачи, сгруппированные по присвоенным тегам'
-  },
-  {
-    name: 'Просроченные задачи',
-    query: 'SELECT task_id, title, due_date FROM task WHERE task_status = 1 AND due_date < CURRENT_DATE',
-    description: 'Активные задачи, срок выполнения которых уже наступил'
-  }
-];
+const getPresets = (user?: User | null): QueryPreset[] => {
+  const isAdmin = user?.role === 'admin' && user?.user_id != null;
+  const userFilterTask = isAdmin ? ` AND user_id = ${user.user_id}` : '';
+  const userFilterTaskWhere = isAdmin ? ` WHERE t.user_id = ${user.user_id}` : '';
+
+  return [
+    {
+      name: 'Все активные задачи',
+      query: `SELECT * FROM task WHERE task_status = 1${userFilterTask} ORDER BY due_date ASC`,
+      description: isAdmin
+        ? 'Активные задачи текущего пользователя, отсортированные по сроку выполнения'
+        : 'Активные (незавершенные) задачи, отсортированные по сроку выполнения'
+    },
+    {
+      name: 'Задачи с приоритетами',
+      query: `SELECT t.task_id, t.title, t.due_date, p.priority_name, p.priority_color FROM task t LEFT JOIN task_priority p ON t.task_priority_id = p.priority_id${userFilterTaskWhere}`,
+      description: 'Список задач с названиями и цветами приоритетов'
+    },
+    {
+      name: 'Задачи по тегам',
+      query: `SELECT t.task_id, t.title, tg.tag_text, tg.tag_color FROM task t JOIN task_tag_x_task xt ON t.task_id = xt.task_id JOIN task_tag tg ON xt.task_tag_id = tg.task_tag_id${userFilterTaskWhere}`,
+      description: 'Задачи, сгруппированные по присвоенным тегам'
+    },
+    {
+      name: 'Просроченные задачи',
+      query: `SELECT task_id, title, due_date FROM task WHERE task_status = 1 AND due_date < CURRENT_DATE${userFilterTask}`,
+      description: 'Активные задачи, срок выполнения которых уже наступил'
+    }
+  ];
+};
 
 const SCHEMA_INFO: { table: string; description: string; columns: string[] }[] = [
   {
     table: 'task',
     description: 'Основные задачи',
-    columns: ['task_id', 'title', 'description', 'link_to_taskmanager', 'due_date', 'closed_dttm', 'created_at', 'task_status', 'task_priority_id']
+    columns: ['task_id', 'user_id', 'title', 'description', 'link_to_taskmanager', 'due_date', 'closed_dttm', 'created_at', 'task_status', 'task_priority_id']
   },
   {
     table: 'task_priority',
@@ -89,7 +97,8 @@ const SCHEMA_INFO: { table: string; description: string; columns: string[] }[] =
 ];
 
 const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelectTask, user }) => {
-  const [query, setQuery] = useState<string>(PRESETS[0].query);
+  const presets = useMemo(() => getPresets(user), [user]);
+  const [query, setQuery] = useState<string>(() => presets[0].query);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -98,14 +107,18 @@ const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelect
   const [showSchema, setShowSchema] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus textarea on open
+  // Focus textarea on open and reset to initial preset
   useEffect(() => {
     if (isOpen) {
+      setQuery(presets[0].query);
+      setError(null);
+      setValidationError(null);
+      setResult(null);
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 50);
     }
-  }, [isOpen]);
+  }, [isOpen, presets]);
 
   // Handle escape to close
   useEffect(() => {
@@ -260,7 +273,7 @@ const SqlQueryModal: React.FC<SqlQueryModalProps> = ({ isOpen, onClose, onSelect
           <div className="sql-presets-section">
             <span className="sql-section-label">Быстрые шаблоны:</span>
             <div className="sql-presets-list">
-              {PRESETS.map((preset, idx) => (
+              {presets.map((preset: QueryPreset, idx: number) => (
                 <button
                   key={idx}
                   className={`sql-preset-btn ${query === preset.query ? 'active' : ''}`}
