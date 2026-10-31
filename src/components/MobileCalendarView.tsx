@@ -459,7 +459,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
               onClick={() => navigateDay(-1)}
               title="Предыдущий день"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={30} strokeWidth={2.5} />
             </button>
 
             <div className="mobile-nav-center" onClick={jumpToToday}>
@@ -478,7 +478,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
               onClick={() => navigateDay(1)}
               title="Следующий день"
             >
-              <ChevronRight size={22} />
+              <ChevronRight size={30} strokeWidth={2.5} />
             </button>
           </div>
 
@@ -576,7 +576,7 @@ const MobileCalendarView = forwardRef<CalendarStripRef, Props>(({
                     onClick={() => onAddTask(dStr)}
                     title="Добавить задачу"
                   >
-                    <Plus size={18} />
+                    <Plus size={24} strokeWidth={2.5} />
                   </button>
                 </div>
 
