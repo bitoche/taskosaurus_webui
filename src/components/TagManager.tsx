@@ -6,7 +6,7 @@ import './TagManager.css';
 
 interface Props {
   allTags: TaskTag[];
-  onCreateTag: (text: string, color: string) => Promise<void>;
+  onCreateTag: (text: string, color: string) => Promise<any>;
   onFilterByTag: (tagId: number | null) => void;
   activeFilterTagId: number | null;
   onDeleteTagGlobally?: (tagId: number) => Promise<void>;

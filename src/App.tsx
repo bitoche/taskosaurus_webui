@@ -419,7 +419,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveTask = (taskData: Omit<Task, 'task_id'>) => {
+  const handleSaveTask = (taskData: Omit<Task, 'task_id'>, tagIds?: number[]) => {
     if (modalState.task) {
       // Редактирование: моментально закрываем модалку и обновляем локальный стейт
       const taskId = modalState.task.task_id;
@@ -471,6 +471,11 @@ const App: React.FC = () => {
       setModalState({ isOpen: false });
       setTasks(prev => [...prev, optimisticTask]);
 
+      if (tagIds && tagIds.length > 0) {
+        const assignedTags = allTags.filter(t => tagIds.includes(t.task_tag_id));
+        setTaskTagsMap(prev => new Map(prev).set(tempId, assignedTags));
+      }
+
       const createDto: CreateTaskDTO = {
         title: taskData.title,
         description: taskData.description ?? null,
@@ -481,12 +486,32 @@ const App: React.FC = () => {
       };
 
       createTask(createDto)
-        .then(created => {
+        .then(async created => {
           setTasks(prev => prev.map(t => (t.task_id === tempId ? { ...t, ...created } : t)));
+          if (tagIds && tagIds.length > 0) {
+            setTaskTagsMap(prev => {
+              const next = new Map(prev);
+              const tempTags = next.get(tempId) || allTags.filter(t => tagIds.includes(t.task_tag_id));
+              next.delete(tempId);
+              next.set(created.task_id, tempTags);
+              return next;
+            });
+            try {
+              await Promise.all(tagIds.map(tid => assignTagToTask(tid, created.task_id)));
+              await loadTagsData();
+            } catch (tagErr: any) {
+              console.error('Failed to assign tags to created task', tagErr);
+            }
+          }
         })
         .catch((err: any) => {
           console.error('Failed to create task', err);
           setTasks(prev => prev.filter(t => t.task_id !== tempId));
+          setTaskTagsMap(prev => {
+            const next = new Map(prev);
+            next.delete(tempId);
+            return next;
+          });
           addToast(`error-task-create-${tempId}`, {
             type: 'error',
             message: `Ошибка создания задачи "${taskData.title}": ${err?.message || err}`,
@@ -673,16 +698,18 @@ const App: React.FC = () => {
     });
   }, [taskTagsMap, addToast]);
 
-  const handleCreateTag = useCallback(async (tagText: string, tagColor: string) => {
+  const handleCreateTag = useCallback(async (tagText: string, tagColor: string): Promise<TaskTag | undefined> => {
     try {
-      await createTag(tagText, tagColor);
+      const created = await createTag(tagText, tagColor);
       await loadTagsData();
+      return created;
     } catch (err: any) {
       console.error('Failed to create tag', err);
       addToast('error-tag-create', {
         type: 'error',
         message: `Ошибка создания тега: ${err?.message || err}`,
       });
+      return undefined;
     }
   }, [loadTagsData, addToast]);
 

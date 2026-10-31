@@ -10,14 +10,14 @@ interface Props {
   isOpen: boolean;
   task?: Task;
   defaultDate?: string;
-  onSave: (taskData: Omit<Task, 'task_id'>) => Promise<void> | void;
+  onSave: (taskData: Omit<Task, 'task_id'>, tagIds?: number[]) => Promise<void> | void;
   onDelete: () => void;
   onClose: () => void;
   allTags: TaskTag[];
   taskTags: TaskTag[];
   onAssignTag: (tagId: number) => void;
   onRemoveTag: (tagId: number) => void;
-  onCreateTag: (tagText: string, tagColor: string) => Promise<void>;
+  onCreateTag: (tagText: string, tagColor: string) => Promise<TaskTag | void>;
   allPriorities?: TaskPriority[];
 }
 
@@ -46,6 +46,7 @@ const TaskModal: React.FC<Props> = ({
   const [newTagText, setNewTagText] = useState('');
   const [newTagColor, setNewTagColor] = useState('#ff0000');
   const [creatingTag, setCreatingTag] = useState(false);
+  const [draftTags, setDraftTags] = useState<TaskTag[]>([]);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const tagSelectorRef = useRef<HTMLDivElement>(null);
@@ -98,6 +99,7 @@ const TaskModal: React.FC<Props> = ({
       setClosedDate('');
       setTaskPriorityId(null);
       setShowMore(false);
+      setDraftTags([]);
       originalDataRef.current = { title: '', description: '', dueDate: defaultDate || '', link: '', closedDate: '' };
     }
     hasModalChangesRef.current = false;
@@ -160,6 +162,27 @@ const TaskModal: React.FC<Props> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, showTagSelector, handleConfirmClose]);
 
+  const activeTags = task ? taskTags : draftTags;
+
+  const handleSelectTag = (tag: TaskTag) => {
+    if (task) {
+      onAssignTag(tag.task_tag_id);
+    } else {
+      if (!draftTags.some(t => t.task_tag_id === tag.task_tag_id)) {
+        setDraftTags(prev => [...prev, tag]);
+      }
+    }
+    setShowTagSelector(false);
+  };
+
+  const handleRemoveActiveTag = (tagId: number) => {
+    if (task) {
+      onRemoveTag(tagId);
+    } else {
+      setDraftTags(prev => prev.filter(t => t.task_tag_id !== tagId));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -174,7 +197,7 @@ const TaskModal: React.FC<Props> = ({
       task_status: task?.task_status ?? null,
       closed_dttm: closedDate || null,
       task_priority_id: taskPriorityId,
-    });
+    }, !task ? draftTags.map(t => t.task_tag_id) : undefined);
     onClose();
   };
 
@@ -209,9 +232,17 @@ const TaskModal: React.FC<Props> = ({
     if (!text || text.length > 255) return;
     setCreatingTag(true);
     try {
-      await onCreateTag(text, newTagColor);
+      const createdTag = await onCreateTag(text, newTagColor);
       setNewTagText('');
       setNewTagColor('#4a90d9');
+      if (createdTag) {
+        if (task) {
+          onAssignTag(createdTag.task_tag_id);
+        } else {
+          setDraftTags(prev => [...prev, createdTag]);
+        }
+        setShowTagSelector(false);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -379,10 +410,10 @@ const TaskModal: React.FC<Props> = ({
               </div>
               <div className="tags-section">
                 <div className="current-tags">
-                  {taskTags.length === 0 ? (
+                  {activeTags.length === 0 ? (
                     <div className="empty-hint">Нет тегов</div>
                   ) : (
-                    taskTags.map(tag => {
+                    activeTags.map(tag => {
                       const bg = tag.tag_color || '#4a90d9';
                       const fg = getContrastTextColor(bg);
                       return (
@@ -392,7 +423,7 @@ const TaskModal: React.FC<Props> = ({
                             type="button"
                             className="tag-remove"
                             style={{ color: fg }}
-                            onClick={() => onRemoveTag(tag.task_tag_id)}
+                            onClick={() => handleRemoveActiveTag(tag.task_tag_id)}
                             title="Удалить тег"
                           >
                             <X size={12} />
@@ -413,20 +444,17 @@ const TaskModal: React.FC<Props> = ({
                   {showTagSelector && (
                     <div className="tag-selector-dropdown">
                       <div className="tag-list-select">
-                        {allTags.filter(t => !taskTags.some(tt => tt.task_tag_id === t.task_tag_id)).map(tag => (
+                        {allTags.filter(t => !activeTags.some(tt => tt.task_tag_id === t.task_tag_id)).map(tag => (
                           <div
                             key={tag.task_tag_id}
                             className="tag-option"
-                            onClick={() => {
-                              onAssignTag(tag.task_tag_id);
-                              setShowTagSelector(false);
-                            }}
+                            onClick={() => handleSelectTag(tag)}
                           >
                             <span className="tag-color-dot" style={{ backgroundColor: tag.tag_color }} />
                             {tag.tag_text}
                           </div>
                         ))}
-                        {allTags.filter(t => !taskTags.some(tt => tt.task_tag_id === t.task_tag_id)).length === 0 && (
+                        {allTags.filter(t => !activeTags.some(tt => tt.task_tag_id === t.task_tag_id)).length === 0 && (
                           <div className="no-tags-msg">Все теги уже добавлены</div>
                         )}
                       </div>
