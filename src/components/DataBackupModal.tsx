@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, ArrowUpDown, Download, Upload, FileText, Loader2 } from 'lucide-react';
+import { X, Download, Upload, FileText, Loader2, User as UserIcon } from 'lucide-react';
 import { exportMyData, importMyData } from '../api';
 import { ImportSummary } from '../types';
 import './ManagementModals.css';
@@ -8,6 +8,7 @@ interface DataBackupModalProps {
   isOpen: boolean;
   onClose: () => void;
   username: string;
+  role?: string;
   onNotify: (type: 'info' | 'warning' | 'error', message: string) => void;
   onRefreshData: () => void;
 }
@@ -16,6 +17,7 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   isOpen,
   onClose,
   username,
+  role,
   onNotify,
   onRefreshData,
 }) => {
@@ -84,13 +86,13 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         {/* Заголовок */}
         <div className="mgmt-modal-header">
           <div className="mgmt-modal-title-group">
-            <div className="mgmt-modal-icon-badge">
-              <ArrowUpDown size={20} />
+            <div className="mgmt-modal-icon-badge" style={{ background: 'var(--today-card-bg)', border: '1px solid var(--today-card-border)', color: 'var(--today-card-date)' }}>
+              <UserIcon size={20} />
             </div>
             <div>
-              <h2 className="mgmt-modal-title">Экспорт и импорт данных</h2>
+              <h2 className="mgmt-modal-title">Профиль и данные</h2>
               <p className="mgmt-modal-subtitle">
-                Резервное копирование и перенос ваших задач
+                Профиль пользователя и резервное копирование задач
               </p>
             </div>
           </div>
@@ -105,6 +107,37 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
 
         {/* Тело */}
         <div className="mgmt-modal-body">
+          {/* Карточка профиля */}
+          <div className="mgmt-section-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'var(--today-card-bg)',
+                border: '1.5px solid var(--today-card-border)',
+                color: 'var(--today-card-date)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <UserIcon size={22} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                  {username}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-hint)' }}>
+                  {role === 'admin' ? 'Администратор' : 'Пользователь'}
+                </div>
+              </div>
+            </div>
+            {role === 'admin' && (
+              <span className="user-role-badge">Admin</span>
+            )}
+          </div>
+
           {/* Секция экспорта */}
           <div className="mgmt-section-box">
             <h3 className="mgmt-section-title">

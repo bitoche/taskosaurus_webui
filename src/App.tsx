@@ -20,7 +20,7 @@ import SqlQueryModal from './components/SqlQueryModal';
 import AuthScreen from './components/AuthScreen';
 import AdminUsersModal from './components/AdminUsersModal';
 import DataBackupModal from './components/DataBackupModal';
-import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, User as UserIcon, Users, ArrowUpDown, Loader2, Smartphone, Monitor, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, RefreshCw, Moon, Sun, Database, X, LogOut, User as UserIcon, Users, Loader2, Smartphone, Monitor, ChevronDown, ChevronUp } from 'lucide-react';
 import TagManager from './components/TagManager';
 import PriorityManager from './components/PriorityManager';
 
@@ -47,8 +47,19 @@ const App: React.FC = () => {
     if (saved === 'desktop') return false;
     return typeof window !== 'undefined' && window.innerWidth <= 768;
   });
+  const [isPhoneScreen, setIsPhoneScreen] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
   const [isMobileTableOpen, setIsMobileTableOpen] = useState(false);
   const [isUndatedSectionOpen, setIsUndatedSectionOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsPhoneScreen(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleViewMode = () => {
     setIsMobileView(prev => {
@@ -831,7 +842,11 @@ const App: React.FC = () => {
             <h1>Task-o-Saurus</h1>
           </div>
           <div className="nav-buttons">
-            <div className="user-badge">
+            <button
+              className="user-badge"
+              onClick={() => setIsBackupModalOpen(true)}
+              title="Профиль и управление данными"
+            >
               <UserIcon size={16} className="user-badge-icon" />
               <span>{currentUser.username}</span>
               {currentUser.role === 'admin' && (
@@ -839,27 +854,17 @@ const App: React.FC = () => {
                   Admin
                 </span>
               )}
-            </div>
+            </button>
 
             {currentUser.role === 'admin' && (
               <button
                 className="nav-btn"
                 onClick={() => setIsUsersModalOpen(true)}
                 title="Панель администратора"
-                style={{ marginRight: 4 }}
               >
                 <Users size={18} />
               </button>
             )}
-
-            <button
-              className="nav-btn"
-              onClick={() => setIsBackupModalOpen(true)}
-              title="Экспорт и импорт данных (JSON)"
-              style={{ marginRight: 4 }}
-            >
-              <ArrowUpDown size={18} />
-            </button>
 
             <button
               className="nav-btn"
@@ -871,19 +876,20 @@ const App: React.FC = () => {
                 }
               }}
               title="Выйти"
-              style={{ marginRight: 6 }}
             >
               <LogOut size={18} />
             </button>
 
-            <button
-              className="nav-btn"
-              onClick={toggleViewMode}
-              title={isMobileView ? "Переключить на горизонтальный календарь" : "Переключить на мобильный вид"}
-              style={{ marginRight: 4 }}
-            >
-              {isMobileView ? <Monitor size={18} /> : <Smartphone size={18} />}
-            </button>
+            {/* Кнопка смены вида: только если вид не соответствует размеру экрана */}
+            {isMobileView !== isPhoneScreen && (
+              <button
+                className="nav-btn"
+                onClick={toggleViewMode}
+                title={isMobileView ? "Переключить на горизонтальный календарь" : "Переключить на мобильный вид"}
+              >
+                {isMobileView ? <Monitor size={18} /> : <Smartphone size={18} />}
+              </button>
+            )}
 
             <button className="nav-btn theme-toggle-btn" onClick={toggleTheme} title={isDark ? 'Светлая тема' : 'Темная тема'}>
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -1072,6 +1078,7 @@ const App: React.FC = () => {
           isOpen={isBackupModalOpen}
           onClose={() => setIsBackupModalOpen(false)}
           username={currentUser.username}
+          role={currentUser.role}
           onNotify={(type, msg) => addToast(`backup-${Date.now()}`, { type, message: msg })}
           onRefreshData={() => handleRefreshTasks(true)}
         />
