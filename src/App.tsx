@@ -901,12 +901,16 @@ const App: React.FC = () => {
             <button className="nav-btn theme-toggle-btn" onClick={toggleTheme} title={isDark ? 'Светлая тема' : 'Темная тема'}>
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <button className="nav-btn" onClick={() => calendarRef.current?.scrollLeft()} title="Влево / Предыдущий день">
-              <ChevronLeft size={20} />
-            </button>
-            <button className="nav-btn" onClick={() => calendarRef.current?.scrollRight()} title="Вправо / Следующий день">
-              <ChevronRight size={20} />
-            </button>
+            {!isMobileView && (
+              <>
+                <button className="nav-btn" onClick={() => calendarRef.current?.scrollLeft()} title="Влево / Предыдущий день">
+                  <ChevronLeft size={20} />
+                </button>
+                <button className="nav-btn" onClick={() => calendarRef.current?.scrollRight()} title="Вправо / Следующий день">
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
           </div>
         </div>
         {isMobileView ? (
