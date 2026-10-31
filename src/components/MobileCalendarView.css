@@ -66,6 +66,11 @@
 .mobile-nav-arrow {
   width: 44px;
   height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 44px;
+  max-height: 44px;
+  padding: 0;
   border-radius: 12px;
   border: none;
   background: var(--bg-nav-btn);
@@ -73,8 +78,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
+}
+
+.mobile-nav-arrow svg {
+  flex-shrink: 0;
+  display: block;
 }
 
 .mobile-nav-arrow:active {
@@ -425,6 +437,11 @@
 .mobile-task-action-btn {
   width: 38px;
   height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -432,8 +449,15 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
+  flex-shrink: 0;
+  box-sizing: border-box;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.mobile-task-action-btn svg {
+  flex-shrink: 0;
+  display: block;
 }
 
 .mobile-task-action-btn:active {
@@ -509,6 +533,11 @@
 .mobile-agenda-add-btn {
   width: 38px;
   height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+  padding: 0;
   border-radius: 10px;
   border: none;
   background: rgba(59, 130, 246, 0.1);
@@ -516,8 +545,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
+}
+
+.mobile-agenda-add-btn svg {
+  flex-shrink: 0;
+  display: block;
 }
 
 .mobile-agenda-add-btn:active {
