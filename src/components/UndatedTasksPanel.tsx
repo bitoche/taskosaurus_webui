@@ -133,7 +133,7 @@ export const UndatedTasksPanel: React.FC<UndatedTasksPanelProps> = ({
               title="Создать задачу без даты"
             >
               <Plus size={16} />
-              <span>+ Добавить задачу без даты</span>
+              <span>Добавить задачу без даты</span>
             </button>
           </div>
 
