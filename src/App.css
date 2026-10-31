@@ -225,8 +225,9 @@ body {
   height: 44px;
   padding: 0 14px;
   border-radius: 44px;
-  background: var(--bg-nav-btn);
-  color: var(--text-primary);
+  background: var(--today-card-bg);
+  border: 1.5px solid var(--today-card-border);
+  color: var(--today-card-date);
   font-size: 0.9rem;
   font-weight: 600;
   box-shadow: var(--shadow-btn);
@@ -235,7 +236,7 @@ body {
 }
 
 .user-badge .user-badge-icon {
-  color: #6366f1;
+  color: var(--today-card-date);
   flex-shrink: 0;
 }
 
@@ -243,7 +244,7 @@ body {
   font-size: 0.65rem;
   padding: 2px 6px;
   border-radius: 6px;
-  background: #f59e0b;
+  background: var(--today-card-border);
   color: #fff;
   text-transform: uppercase;
   font-weight: 700;
