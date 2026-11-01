@@ -29,6 +29,10 @@ type TaskRowData = Task & {
   earlyClosed: number;
 };
 
+// Суммарная минимальная ширина всех колонок кроме "Название":
+// created_at(155) + due_date(180) + link(80) + task_status(115) + closed_dttm(175) + actions(115) = 820px
+const NON_TITLE_COLUMNS_MIN_TOTAL = 820;
+
 const TaskList: React.FC<Props> = ({
   tasks,
   taskTagsMap,
@@ -67,16 +71,11 @@ const TaskList: React.FC<Props> = ({
     { id: 'due_date', desc: false },
   ]);
 
-  // Восстановление сохраненных размеров колонок из localStorage (кроме эластичного столбца "title")
+  // Восстановление сохраненных размеров колонок из localStorage
   const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
     try {
-      const saved = localStorage.getItem('taskList_columnSizing_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        delete parsed.title;
-        return parsed;
-      }
-      return {};
+      const saved = localStorage.getItem('taskList_columnSizing_v4');
+      return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
     }
@@ -86,11 +85,8 @@ const TaskList: React.FC<Props> = ({
     (updater: any) => {
       setColumnSizing((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater;
-        if (next && next.title) {
-          delete next.title;
-        }
         try {
-          localStorage.setItem('taskList_columnSizing_v3', JSON.stringify(next));
+          localStorage.setItem('taskList_columnSizing_v4', JSON.stringify(next));
         } catch (e) {
           console.error('Failed to save column sizing', e);
         }
@@ -99,6 +95,16 @@ const TaskList: React.FC<Props> = ({
     },
     []
   );
+
+  // Расчет размера колонки "Название":
+  // Если пользователь явно менял размер "title", используется сохраненный.
+  // Иначе "title" занимает все оставшееся место контейнера (wrapperWidth - NON_TITLE_COLUMNS_MIN_TOTAL).
+  const titleSize = useMemo(() => {
+    if (columnSizing['title']) {
+      return Math.max(200, columnSizing['title']);
+    }
+    return Math.max(200, wrapperWidth - NON_TITLE_COLUMNS_MIN_TOTAL);
+  }, [columnSizing['title'], wrapperWidth]);
 
   const data = useMemo<TaskRowData[]>(() => {
     const now = new Date();
@@ -137,9 +143,9 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'title',
         header: 'Название',
-        size: 250,
-        minSize: 180,
-        enableResizing: false,
+        size: titleSize,
+        minSize: 200,
+        enableResizing: true,
         sortingFn: 'alphanumeric',
         meta: {
           className: 'task-title-td',
@@ -158,8 +164,9 @@ const TaskList: React.FC<Props> = ({
         id: 'created_at',
         accessorFn: (row) => row.created_at ?? undefined,
         header: 'Дата создания',
-        size: 115,
-        minSize: 95,
+        size: 155,
+        minSize: 155,
+        enableResizing: true,
         sortUndefined: 'last',
         sortingFn: 'alphanumeric',
         cell: (info) => {
@@ -176,8 +183,9 @@ const TaskList: React.FC<Props> = ({
         id: 'due_date',
         accessorFn: (row) => row.due_date ?? undefined,
         header: 'Планируемая дата',
-        size: 135,
-        minSize: 105,
+        size: 180,
+        minSize: 180,
+        enableResizing: true,
         sortUndefined: 'last',
         sortingFn: 'alphanumeric',
         cell: (info) => {
@@ -237,8 +245,8 @@ const TaskList: React.FC<Props> = ({
       {
         id: 'link',
         header: 'Ссылка',
-        size: 60,
-        minSize: 50,
+        size: 80,
+        minSize: 80,
         enableSorting: false,
         enableResizing: false,
         meta: {
@@ -273,8 +281,9 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'task_status',
         header: 'Статус',
-        size: 125,
-        minSize: 100,
+        size: 115,
+        minSize: 115,
+        enableResizing: true,
         sortingFn: 'basic',
         cell: (info) => {
           const task = info.row.original;
@@ -305,8 +314,9 @@ const TaskList: React.FC<Props> = ({
         id: 'closed_dttm',
         accessorFn: (row) => row.closed_dttm ?? undefined,
         header: 'Дата завершения',
-        size: 135,
-        minSize: 105,
+        size: 175,
+        minSize: 175,
+        enableResizing: true,
         sortUndefined: 'last',
         sortingFn: 'alphanumeric',
         cell: (info) => {
@@ -322,8 +332,8 @@ const TaskList: React.FC<Props> = ({
       {
         id: 'actions',
         header: '',
-        size: 105,
-        minSize: 90,
+        size: 115,
+        minSize: 115,
         enableSorting: false,
         enableResizing: false,
         cell: (info) => {
@@ -473,8 +483,7 @@ const TaskList: React.FC<Props> = ({
         <table
           className="task-list-table"
           style={{
-            width: table.getTotalSize() > wrapperWidth ? `${table.getTotalSize()}px` : '100%',
-            minWidth: '100%',
+            width: `${table.getTotalSize()}px`,
           }}
         >
           <colgroup>
@@ -482,7 +491,7 @@ const TaskList: React.FC<Props> = ({
               <col
                 key={column.id}
                 style={{
-                  width: column.id === 'title' ? 'auto' : `${column.getSize()}px`,
+                  width: `${column.getSize()}px`,
                 }}
               />
             ))}
@@ -500,7 +509,7 @@ const TaskList: React.FC<Props> = ({
                     <th
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{ width: header.column.id === 'title' ? undefined : `${header.getSize()}px` }}
+                      style={{ width: `${header.getSize()}px` }}
                       className={`task-th ${canSort ? 'sortable' : ''} ${meta?.thClassName || ''}`}
                     >
                       <div
@@ -559,7 +568,7 @@ const TaskList: React.FC<Props> = ({
                       <td
                         key={cell.id}
                         className={meta?.className || ''}
-                        style={{ width: cell.column.id === 'title' ? undefined : `${cell.column.getSize()}px` }}
+                        style={{ width: `${cell.column.getSize()}px` }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
