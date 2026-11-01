@@ -320,11 +320,31 @@
 .mgmt-table-wrapper {
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mgmt-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.mgmt-table-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-scrollbar-track, rgba(0, 0, 0, 0.05));
+  border-radius: 4px;
+}
+.mgmt-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--bg-scrollbar-thumb, rgba(0, 0, 0, 0.2));
+  border-radius: 4px;
+}
+.mgmt-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-scrollbar-thumb-hover, rgba(0, 0, 0, 0.35));
 }
 
 .mgmt-table {
   width: 100%;
+  min-width: 520px;
   border-collapse: collapse;
   text-align: left;
   font-size: 13px;

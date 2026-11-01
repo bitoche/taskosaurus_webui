@@ -19,7 +19,7 @@
   --task-list-status-completed: #10b981;
   --task-list-status-incomplete: #9ca3af;
   --task-list-no-tasks: #64748b;
-  --task-list-resizer: rgba(0, 0, 0, 0.2);
+  --task-list-resizer: rgba(0, 0, 0, 0.18);
   --task-list-resizer-active: #3b82f6;
   --task-list-overdue-closed-bg: #ffc107;
   --task-list-overdue-closed-text: #212529;
@@ -33,7 +33,7 @@
   --task-list-search-border: #4a4a6a;
   --task-list-border: #3a3a55;
   --task-list-hover-border: #4a4a6a;
-  --task-list-header-bg: #3a3a55;
+  --task-list-header-bg: #33334d;
   --task-list-row-hover: #3a3a55;
   --task-list-row-completed: #1a3a2a;
   --task-list-link: #5b7cfa;
@@ -46,7 +46,7 @@
   --task-list-status-completed: #10b981;
   --task-list-status-incomplete: #606070;
   --task-list-no-tasks: #808090;
-  --task-list-resizer: rgba(255, 255, 255, 0.2);
+  --task-list-resizer: rgba(255, 255, 255, 0.22);
   --task-list-resizer-active: #5b7cfa;
   --task-list-overdue-closed-bg: #d4a006;
   --task-list-overdue-closed-text: #1a1a1a;
@@ -71,7 +71,13 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.task-list-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .task-list-header h3 {
@@ -81,32 +87,69 @@
   transition: color 0.3s ease;
 }
 
+.task-list-count-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--task-list-border);
+  color: var(--task-list-header);
+  opacity: 0.85;
+}
+
 .task-list-search {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: var(--task-list-search-bg);
-  padding: 0.4rem 1rem;
+  padding: 0.4rem 0.85rem;
   border-radius: 40px;
   border: 1px solid var(--task-list-search-border);
   transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.task-list-search-icon {
+  color: var(--task-list-no-tasks);
+  flex-shrink: 0;
 }
 
 .task-list-search input {
   border: none;
   outline: none;
   font-size: 0.9rem;
-  width: 220px;
+  width: 230px;
   background: transparent;
   color: var(--task-list-header);
 }
 
+.task-list-search-clear {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--task-list-no-tasks);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s, background 0.2s;
+}
+
+.task-list-search-clear:hover {
+  color: var(--task-list-header);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Обертка таблицы со скроллом */
 .task-list-table-wrapper {
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 480px;
   scrollbar-width: thin;
   width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--task-list-border);
+  -webkit-overflow-scrolling: touch;
 }
 
 .task-list-table-wrapper::-webkit-scrollbar {
@@ -114,87 +157,152 @@
   height: 8px;
 }
 .task-list-table-wrapper::-webkit-scrollbar-track {
-  background: var(--bg-scrollbar-track);
+  background: var(--bg-scrollbar-track, rgba(0, 0, 0, 0.03));
   border-radius: 4px;
 }
 .task-list-table-wrapper::-webkit-scrollbar-thumb {
-  background: var(--bg-scrollbar-thumb);
+  background: var(--bg-scrollbar-thumb, rgba(0, 0, 0, 0.2));
   border-radius: 4px;
 }
 .task-list-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--bg-scrollbar-thumb-hover);
+  background: var(--bg-scrollbar-thumb-hover, rgba(0, 0, 0, 0.35));
 }
 
+/* Сама таблица: фиксированный layout с точной суммарной шириной колонок */
 .task-list-table {
   table-layout: fixed;
-  min-width: 100%;
-  width: auto;
   border-collapse: collapse;
+  margin: 0;
+  text-align: left;
 }
 
-/* Высота строк увеличена */
-.task-list-table td,
+/* Прилипающий заголовок */
+.task-list-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--task-list-header-bg);
+}
+
 .task-list-table th {
-  padding: 12px 8px;
+  position: relative;
+  background: var(--task-list-header-bg);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--task-list-border);
+  user-select: none;
+  white-space: nowrap;
+  color: var(--task-list-header);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.task-list-table th.sortable {
+  cursor: pointer;
+}
+
+.th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+}
+
+.sort-indicator {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* Ресайзер столбца: удобная зона захвата 10px, клик не вызывает сортировку */
+.resizer {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.resizer::after {
+  content: '';
+  width: 2px;
+  height: 60%;
+  background: var(--task-list-resizer);
+  border-radius: 1px;
+  transition: background 0.15s ease, height 0.15s ease;
+}
+
+.resizer:hover::after,
+.resizer.isResizing::after {
+  background: var(--task-list-resizer-active);
+  height: 100%;
+  width: 2px;
+}
+
+/* Ячейки */
+.task-list-table td {
+  padding: 10px 12px;
   border-bottom: 1px solid var(--task-list-border);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--task-list-header);
-  transition: border-color 0.3s ease, color 0.3s ease;
-}
-.task-list-table td {
-  justify-items: center;
+  box-sizing: border-box;
+  font-size: 0.9rem;
 }
 
-/* Визуальные разделители между столбцами — лёгкая вертикальная линия при наведении */
-.task-list-table td:not(:last-child),
-.task-list-table th:not(:last-child) {
-  border-right: 1px solid transparent;
-  transition: border-color 0.2s;
-}
-.task-list-table tr:hover td:not(:last-child) {
-  border-right-color: var(--task-list-hover-border);
-}
-
-/* Заголовки */
-.task-list-table th {
-  position: relative;
-  background: var(--task-list-header-bg);
-  font-weight: 600;
-  user-select: none;
-  transition: background 0.3s ease;
+.task-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .task-row:hover {
   background: var(--task-list-row-hover);
-  transition: background 0.3s ease;
 }
 
 .task-row.completed-row {
-  opacity: 0.7;
+  opacity: 0.75;
   background: var(--task-list-row-completed);
 }
 
-/* Колонка "Название" – убираем скачки, используем подсказку при наведении */
+/* Колонка названия */
 .task-title-cell {
   display: inline-flex;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: help;
-  align-items: center;
-}
-.task-id-place {
-  background-color: var(--today-card-bg);
-  border-radius: 6px;
-  padding: 2px 4px;
 }
 
-/* Колонки с датами — единый стиль */
+.task-id-badge {
+  background-color: var(--today-card-bg, rgba(59, 130, 246, 0.15));
+  color: var(--accent-color, #2563eb);
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.task-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Колонки с датами */
 .task-date-cell,
 .task-created-cell,
 .task-closed-cell {
@@ -204,123 +312,31 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Колонка ссылки – небольшая ширина, без ресайза */
-.task-link-cell {
-  text-align: center;
-  width: 50px;
-}
-.task-link-cell a {
-  display: inline-flex;
-  align-items: center;
-  color: var(--task-list-link);
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-.task-link-cell a:visited {
-  color: var(--task-list-link);
-}
-.task-link-cell a:hover {
-  color: var(--task-list-link-hover);
-}
-
-/* Колонка действий – фиксированная ширина, запрет ресайза, компактные кнопки */
-.task-actions-group {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  align-items: center;
-  min-width: 100px;
-  max-width: 120px;
-}
-
-/* Точки тегов рядом со статусом */
-.task-status-tags {
-  display: inline-flex;
-  gap: 3px;
-  align-items: center;
-}
-
-.task-status-tag-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  vertical-align: middle;
-  cursor: help;
-}
-
-.status-toggle-btn-list,
-.edit-btn-list,
-.delete-btn-list {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 20px;
-  transition: background 0.1s, color 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--task-list-btn);
-}
-
-.status-toggle-btn-list:hover,
-.edit-btn-list:hover,
-.delete-btn-list:hover {
-  background: var(--task-list-btn-hover);
-}
-.edit-btn-list:hover {
-  color: var(--task-list-btn-edit);
-}
-.delete-btn-list:hover {
-  background: var(--task-list-btn-delete-bg);
-  color: var(--task-list-btn-delete);
-}
-
-.status-icon.completed {
-  color: var(--task-list-status-completed);
-  fill: var(--task-list-status-completed);
-}
-.status-icon.incomplete {
-  color: var(--task-list-status-incomplete);
-}
-
-/* Ячейка даты — компактный вертикальный layout */
-.task-date-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-height: 28px;
-  justify-content: center;
-}
-
-/* Бейдж-дата */
+/* Бейджи даты */
 .date-badge {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
+  gap: 5px;
   padding: 3px 8px;
   border-radius: 6px;
   background: var(--task-list-border);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: background 0.2s, transform 0.15s;
   cursor: default;
-  line-height: 1;
-  font-size: small;
+  line-height: 1.2;
 }
 
 .date-badge:hover {
   background: var(--task-list-search-bg);
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .date-badge-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 1px;
+  gap: 2px;
   color: #dc3545;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .date-badge-icon-closed {
@@ -328,29 +344,27 @@
 }
 
 .date-badge-text {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 500;
   white-space: nowrap;
 }
 
-/* Просроченная дата */
 .date-badge-overdue {
-  background: rgba(220, 53, 69, 0.12);
-  border: 1px solid rgba(220, 53, 69, 0.3);
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.35);
 }
 
 .date-badge-overdue:hover {
-  background: rgba(220, 53, 69, 0.2);
+  background: rgba(220, 53, 69, 0.25);
 }
 
-/* Просрочка при закрытии */
 .date-badge-overdue-closed {
-  background: rgba(255, 193, 7, 0.15);
-  border: 1px solid rgba(255, 193, 7, 0.4);
+  background: rgba(255, 193, 7, 0.18);
+  border: 1px solid rgba(255, 193, 7, 0.45);
 }
 
 .date-badge-overdue-closed:hover {
-  background: rgba(255, 193, 7, 0.25);
+  background: rgba(255, 193, 7, 0.28);
 }
 
 .date-badge-early-closed {
@@ -362,103 +376,118 @@
   background: rgba(16, 185, 129, 0.25);
 }
 
-/* Заглушка для пустой даты */
 .date-placeholder {
   color: var(--task-list-no-tasks);
   font-style: italic;
 }
 
-/* Бейдж просрочки (оставляем для совместимости, но больше не используем) */
-.overdue-badge-list {
-  background: #dc3545;
-  color: white;
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 20px;
-  margin-left: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Бейдж просрочки при закрытии (желтый) */
-.overdue-badge-closed {
-  background: var(--task-list-overdue-closed-bg);
-  color: var(--task-list-overdue-closed-text);
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.no-tasks {
-  text-align: center;
-  padding: 2rem;
-  color: var(--task-list-no-tasks);
-  font-style: italic;
-  transition: color 0.3s ease;
-}
-
-.sticky-header {
-  position: sticky;
-  top: 0;
-  background: var(--task-list-header-bg);
-  z-index: 10;
-  transition: background 0.3s ease;
-}
-
-/* Индикатор сортировки */
-.sort-indicator {
-  font-size: 0.8rem;
-  opacity: 0.6;
-}
-
-/* Ресайзеры */
-.resizer {
-  position: absolute;
-  right: 0;
-  top: 0;
-  height: 100%;
-  width: 5px;
-  background: var(--task-list-resizer);
-  cursor: col-resize;
-  user-select: none;
-  touch-action: none;
-  opacity: 0;
-  transition: opacity 0.2s, background 0.3s ease;
-}
-.resizer:hover,
-.resizer.isResizing {
-  opacity: 1;
-  background: var(--task-list-resizer-active);
-}
-
-.task-status-cell {
+/* Колонка ссылки */
+.task-link-cell {
   display: flex;
-  flex-direction: column;
+  align-items: center;
 }
 
-/* ==================== Приоритеты ==================== */
+.task-link-cell a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--task-list-link);
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.2s ease;
+}
 
-.task-priority-cell {
+.task-link-cell a:hover {
+  color: var(--task-list-link-hover);
+  text-decoration: underline;
+}
+
+/* Колонка статуса */
+.task-status-cell {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.task-status-tags {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.task-status-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.task-status-label {
   font-size: 0.85rem;
   font-weight: 500;
 }
 
-.priority-dot-small {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.status-label-completed {
+  color: var(--task-list-status-completed);
 }
 
-.priority-none {
+.status-label-active {
+  color: var(--task-list-header);
+  opacity: 0.85;
+}
+
+/* Кнопки действий */
+.task-actions-group {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.status-toggle-btn-list,
+.edit-btn-list,
+.delete-btn-list {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--task-list-btn);
+}
+
+.status-toggle-btn-list:hover,
+.edit-btn-list:hover,
+.delete-btn-list:hover {
+  background: var(--task-list-btn-hover);
+}
+
+.edit-btn-list:hover {
+  color: var(--task-list-btn-edit);
+}
+
+.delete-btn-list:hover {
+  background: var(--task-list-btn-delete-bg);
+  color: var(--task-list-btn-delete);
+}
+
+.status-icon.completed {
+  color: var(--task-list-status-completed);
+  fill: var(--task-list-status-completed);
+}
+
+.status-icon.incomplete {
+  color: var(--task-list-status-incomplete);
+}
+
+.no-tasks {
+  text-align: center;
+  padding: 2.5rem;
   color: var(--task-list-no-tasks);
   font-style: italic;
+  font-size: 0.95rem;
 }
-

@@ -272,3 +272,82 @@
   border-top: 1px solid var(--input-border);
   margin: 1em 0;
 }
+
+
+/* Стили таблиц в markdown (описание и комментарии) */
+.markdown-table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0.75rem 0;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.markdown-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.markdown-table-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-scrollbar-track, rgba(0, 0, 0, 0.05));
+  border-radius: 4px;
+}
+
+.markdown-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--bg-scrollbar-thumb, rgba(0, 0, 0, 0.2));
+  border-radius: 4px;
+}
+
+.markdown-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-scrollbar-thumb-hover, rgba(0, 0, 0, 0.35));
+}
+
+.markdown-table-wrapper table,
+.markdown-preview table,
+.comment-text table {
+  width: 100%;
+  min-width: 280px;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.markdown-table-wrapper th,
+.markdown-preview th,
+.comment-text th {
+  background: var(--tag-bg, #f1f5f9);
+  padding: 8px 12px;
+  font-weight: 600;
+  border-bottom: 2px solid var(--input-border);
+  color: var(--modal-title, inherit);
+  white-space: nowrap;
+}
+
+.markdown-table-wrapper td,
+.markdown-preview td,
+.comment-text td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--input-border);
+  color: inherit;
+}
+
+.markdown-table-wrapper tr:last-child td,
+.markdown-preview tr:last-child td,
+.comment-text tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-table-wrapper tr:hover td,
+.markdown-preview tr:hover td,
+.comment-text tr:hover td {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .markdown-table-wrapper tr:hover td,
+.dark .markdown-preview tr:hover td,
+.dark .comment-text tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}

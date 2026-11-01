@@ -120,6 +120,12 @@ renderer.code = ({ text, lang }) => {
   return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-block-lang">${escapeHtml(langDisplay)}</span><button type="button" class="copy-code-btn" onclick="window.__copyMarkdownCode && window.__copyMarkdownCode(this)" title="Скопировать код"><span class="copy-icon-wrapper"><svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><svg class="check-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="copy-text">Скопировать</span></button></div><pre><code${langClass}>${escapedText}</code></pre></div>\n`;
 };
 
+// Таблицы оборачиваются в контейнер со скроллом (overflow-x)
+const defaultTableRenderer = renderer.table.bind(renderer);
+renderer.table = (token) => {
+  return `<div class="markdown-table-wrapper">${defaultTableRenderer(token)}</div>\n`;
+};
+
 marked.setOptions({ renderer });
 
 // Markdown рендерер на базе marked
