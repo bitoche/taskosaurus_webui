@@ -326,8 +326,10 @@
 /* Бейджи даты */
 .date-badge {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 2px;
   padding: 3px 8px;
   border-radius: 6px;
   background: var(--task-list-border);
@@ -344,10 +346,11 @@
 .date-badge-icon {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   color: #dc3545;
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1;
 }
 
 .date-badge-icon-closed {
@@ -426,16 +429,17 @@
 /* Колонка статуса */
 .task-status-cell {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
 }
 
 .task-status-tags {
   display: inline-flex;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
-  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .task-status-tag-dot {
@@ -443,6 +447,7 @@
   height: 8px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .task-status-label {
