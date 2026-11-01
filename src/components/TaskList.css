@@ -168,9 +168,11 @@
   background: var(--bg-scrollbar-thumb-hover, rgba(0, 0, 0, 0.35));
 }
 
-/* Сама таблица: фиксированный layout с точной шириной колонок */
+/* Сама таблица: фиксированный layout с заполнением 100% ширины */
 .task-list-table {
   table-layout: fixed;
+  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   margin: 0;
   text-align: left;

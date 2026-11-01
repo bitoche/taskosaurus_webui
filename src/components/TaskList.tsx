@@ -29,9 +29,31 @@ type TaskRowData = Task & {
   earlyClosed: number;
 };
 
-// Суммарная минимальная ширина всех колонок кроме "Название":
-// created_at(155) + due_date(180) + link(80) + task_status(115) + closed_dttm(175) + actions(115) = 820px
-const NON_TITLE_COLUMNS_MIN_TOTAL = 820;
+const COLUMN_MIN_SIZES: Record<string, number> = {
+  title: 200,
+  created_at: 155,
+  due_date: 180,
+  link: 80,
+  task_status: 115,
+  closed_dttm: 175,
+  actions: 115,
+};
+
+const DEFAULT_COLUMN_SIZES: Record<string, number> = {
+  created_at: 155,
+  due_date: 180,
+  link: 80,
+  task_status: 115,
+  closed_dttm: 175,
+  actions: 115,
+};
+
+const RESIZABLE_DIVIDERS: Record<string, 'created_at' | 'due_date' | 'task_status' | 'closed_dttm'> = {
+  title: 'created_at',        // Левая грань "Дата создания" (граница между Название и Дата создания)
+  created_at: 'due_date',     // Левая грань "Планируемая дата" (граница между Дата создания и Планируемая дата)
+  link: 'task_status',        // Левая грань "Статус" (граница между Ссылка и Статус)
+  task_status: 'closed_dttm', // Левая грань "Дата завершения" (граница между Статус и Дата завершения)
+};
 
 const TaskList: React.FC<Props> = ({
   tasks,
@@ -72,39 +94,94 @@ const TaskList: React.FC<Props> = ({
   ]);
 
   // Восстановление сохраненных размеров колонок из localStorage
-  const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     try {
-      const saved = localStorage.getItem('taskList_columnSizing_v4');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
+      const saved = localStorage.getItem('taskList_columnWidths_v5');
+      if (saved) {
+        return { ...DEFAULT_COLUMN_SIZES, ...JSON.parse(saved) };
+      }
+    } catch {}
+    return { ...DEFAULT_COLUMN_SIZES };
   });
 
-  const handleColumnSizingChange = useCallback(
-    (updater: any) => {
-      setColumnSizing((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater;
-        try {
-          localStorage.setItem('taskList_columnSizing_v4', JSON.stringify(next));
-        } catch (e) {
-          console.error('Failed to save column sizing', e);
-        }
-        return next;
-      });
+  const [isResizingCol, setIsResizingCol] = useState<string | null>(null);
+
+  const nonTitleTotal = useMemo(() => {
+    return (
+      (columnWidths.created_at ?? 155) +
+      (columnWidths.due_date ?? 180) +
+      (columnWidths.link ?? 80) +
+      (columnWidths.task_status ?? 115) +
+      (columnWidths.closed_dttm ?? 175) +
+      (columnWidths.actions ?? 115)
+    );
+  }, [columnWidths]);
+
+  // Заголовок "Название" занимает всё оставшееся место, чтобы таблица всегда занимала ровно 100% ширины
+  const titleWidth = useMemo(() => {
+    return Math.max(200, wrapperWidth - nonTitleTotal);
+  }, [wrapperWidth, nonTitleTotal]);
+
+  const totalTableWidth = titleWidth + nonTitleTotal;
+
+  const getColWidth = useCallback(
+    (colId: string): number => {
+      if (colId === 'title') return titleWidth;
+      return columnWidths[colId] ?? DEFAULT_COLUMN_SIZES[colId] ?? 100;
     },
-    []
+    [titleWidth, columnWidths]
   );
 
-  // Расчет размера колонки "Название":
-  // Если пользователь явно менял размер "title", используется сохраненный.
-  // Иначе "title" занимает все оставшееся место контейнера (wrapperWidth - NON_TITLE_COLUMNS_MIN_TOTAL).
-  const titleSize = useMemo(() => {
-    if (columnSizing['title']) {
-      return Math.max(200, columnSizing['title']);
-    }
-    return Math.max(200, wrapperWidth - NON_TITLE_COLUMNS_MIN_TOTAL);
-  }, [columnSizing['title'], wrapperWidth]);
+  const handleResizeStart = useCallback(
+    (targetCol: 'created_at' | 'due_date' | 'task_status' | 'closed_dttm', e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const startWidth = columnWidths[targetCol] ?? DEFAULT_COLUMN_SIZES[targetCol];
+      const minWidth = COLUMN_MIN_SIZES[targetCol];
+
+      // Ограничение: "Название" не может сжаться меньше 200px
+      const currentTitleWidth = Math.max(200, wrapperWidth - nonTitleTotal);
+      const maxExpand = Math.max(0, currentTitleWidth - 200);
+      const maxWidth = startWidth + maxExpand;
+
+      setIsResizingCol(targetCol);
+
+      const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+        const currentX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+        const deltaX = currentX - startX;
+        // Тянем левую границу влево (deltaX < 0) -> целевой столбец расширяется влево,
+        // правая граница и все столбцы правее остаются на месте!
+        // Тянем вправо (deltaX > 0) -> целевой столбец сжимается (до minWidth).
+        let newWidth = Math.round(startWidth - deltaX);
+        if (newWidth < minWidth) newWidth = minWidth;
+        if (newWidth > maxWidth) newWidth = maxWidth;
+
+        setColumnWidths((prev) => {
+          const next = { ...prev, [targetCol]: newWidth };
+          try {
+            localStorage.setItem('taskList_columnWidths_v5', JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      };
+
+      const onEnd = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onEnd);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend', onEnd);
+        setIsResizingCol(null);
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onEnd);
+    },
+    [columnWidths, wrapperWidth, nonTitleTotal]
+  );
 
   const data = useMemo<TaskRowData[]>(() => {
     const now = new Date();
@@ -143,9 +220,7 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'title',
         header: 'Название',
-        size: titleSize,
         minSize: 200,
-        enableResizing: true,
         sortingFn: 'alphanumeric',
         meta: {
           className: 'task-title-td',
@@ -431,13 +506,9 @@ const TaskList: React.FC<Props> = ({
     state: {
       sorting,
       globalFilter,
-      columnSizing,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnSizingChange: handleColumnSizingChange,
-    columnResizeMode: 'onChange',
-    enableColumnResizing: true,
     enableMultiSort: true,
     enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
@@ -483,7 +554,8 @@ const TaskList: React.FC<Props> = ({
         <table
           className="task-list-table"
           style={{
-            width: `${table.getTotalSize()}px`,
+            width: totalTableWidth > wrapperWidth ? `${totalTableWidth}px` : '100%',
+            minWidth: '100%',
           }}
         >
           <colgroup>
@@ -491,7 +563,7 @@ const TaskList: React.FC<Props> = ({
               <col
                 key={column.id}
                 style={{
-                  width: `${column.getSize()}px`,
+                  width: `${getColWidth(column.id)}px`,
                 }}
               />
             ))}
@@ -501,15 +573,15 @@ const TaskList: React.FC<Props> = ({
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
-                  const canResize = header.column.getCanResize();
                   const isSorted = header.column.getIsSorted();
                   const meta = header.column.columnDef.meta as { thClassName?: string } | undefined;
+                  const resizableTarget = RESIZABLE_DIVIDERS[header.column.id];
 
                   return (
                     <th
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{ width: `${header.getSize()}px` }}
+                      style={{ width: `${getColWidth(header.column.id)}px` }}
                       className={`task-th ${canSort ? 'sortable' : ''} ${meta?.thClassName || ''}`}
                     >
                       <div
@@ -527,19 +599,13 @@ const TaskList: React.FC<Props> = ({
                           </span>
                         )}
                       </div>
-                      {canResize && (
+                      {resizableTarget && (
                         <div
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            header.getResizeHandler()(e);
-                          }}
-                          onTouchStart={(e) => {
-                            e.stopPropagation();
-                            header.getResizeHandler()(e);
-                          }}
+                          onMouseDown={(e) => handleResizeStart(resizableTarget, e)}
+                          onTouchStart={(e) => handleResizeStart(resizableTarget, e)}
                           onClick={(e) => e.stopPropagation()}
-                          className={`resizer ${header.column.getIsResizing() ? 'isResizing' : ''}`}
-                          title="Потяните для изменения размера"
+                          className={`resizer ${isResizingCol === resizableTarget ? 'isResizing' : ''}`}
+                          title="Потяните для изменения размера (левая граница столбца)"
                         />
                       )}
                     </th>
@@ -568,7 +634,7 @@ const TaskList: React.FC<Props> = ({
                       <td
                         key={cell.id}
                         className={meta?.className || ''}
-                        style={{ width: `${cell.column.getSize()}px` }}
+                        style={{ width: `${getColWidth(cell.column.id)}px` }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
