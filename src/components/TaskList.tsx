@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { Task, TaskTag } from '../types';
 import {
   useReactTable,
@@ -29,6 +29,10 @@ type TaskRowData = Task & {
   earlyClosed: number;
 };
 
+// Суммарная минимальная ширина всех колонок кроме "Название"
+// created_at(115) + due_date(135) + link(60) + task_status(125) + closed_dttm(135) + actions(105) = 675px
+const NON_TITLE_COLUMNS_TOTAL = 675;
+
 const TaskList: React.FC<Props> = ({
   tasks,
   taskTagsMap,
@@ -37,6 +41,30 @@ const TaskList: React.FC<Props> = ({
   onEditTask,
   onDeleteTask,
 }) => {
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const [wrapperWidth, setWrapperWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      return Math.max(800, window.innerWidth - 64);
+    }
+    return 1000;
+  });
+
+  useEffect(() => {
+    const el = tableWrapperRef.current;
+    if (!el) return;
+
+    const update = () => {
+      if (el.clientWidth > 0) {
+        setWrapperWidth(el.clientWidth);
+      }
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'task_status', desc: false },
@@ -46,7 +74,7 @@ const TaskList: React.FC<Props> = ({
   // Восстановление сохраненных размеров колонок из localStorage
   const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
     try {
-      const saved = localStorage.getItem('taskList_columnSizing');
+      const saved = localStorage.getItem('taskList_columnSizing_v2');
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -58,7 +86,7 @@ const TaskList: React.FC<Props> = ({
       setColumnSizing((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater;
         try {
-          localStorage.setItem('taskList_columnSizing', JSON.stringify(next));
+          localStorage.setItem('taskList_columnSizing_v2', JSON.stringify(next));
         } catch (e) {
           console.error('Failed to save column sizing', e);
         }
@@ -67,6 +95,14 @@ const TaskList: React.FC<Props> = ({
     },
     []
   );
+
+  // Расчет ширины колонки "Название": занимает все оставшееся место контейнера, если не была изменена вручную
+  const computedTitleSize = useMemo(() => {
+    if (columnSizing['title']) {
+      return columnSizing['title'];
+    }
+    return Math.max(200, wrapperWidth - NON_TITLE_COLUMNS_TOTAL);
+  }, [columnSizing, wrapperWidth]);
 
   const data = useMemo<TaskRowData[]>(() => {
     const now = new Date();
@@ -105,7 +141,7 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'title',
         header: 'Название',
-        size: 340,
+        size: computedTitleSize,
         minSize: 180,
         meta: {
           className: 'task-title-td',
@@ -123,8 +159,8 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'created_at',
         header: 'Дата создания',
-        size: 130,
-        minSize: 110,
+        size: 115,
+        minSize: 95,
         cell: (info) => {
           const createdAt = info.getValue() as string | null;
           const formatted = createdAt ? new Date(createdAt).toLocaleDateString('ru-RU') : '—';
@@ -138,8 +174,8 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'due_date',
         header: 'Планируемая дата',
-        size: 160,
-        minSize: 120,
+        size: 135,
+        minSize: 110,
         cell: (info) => {
           const dueDate = info.getValue() as string | null;
           const { overdue, overdueClosed, earlyClosed, isCompleted } = info.row.original;
@@ -197,8 +233,8 @@ const TaskList: React.FC<Props> = ({
       {
         id: 'link',
         header: 'Ссылка',
-        size: 70,
-        minSize: 60,
+        size: 60,
+        minSize: 50,
         enableSorting: false,
         enableResizing: false,
         cell: (info) => {
@@ -229,8 +265,8 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'task_status',
         header: 'Статус',
-        size: 160,
-        minSize: 120,
+        size: 125,
+        minSize: 100,
         cell: (info) => {
           const task = info.row.original;
           const isCompleted = task.isCompleted;
@@ -259,8 +295,8 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'closed_dttm',
         header: 'Дата завершения',
-        size: 150,
-        minSize: 120,
+        size: 135,
+        minSize: 110,
         cell: (info) => {
           const closedDttm = info.getValue() as string | null;
           const formatted = closedDttm ? new Date(closedDttm).toLocaleDateString('ru-RU') : '—';
@@ -274,8 +310,8 @@ const TaskList: React.FC<Props> = ({
       {
         id: 'actions',
         header: '',
-        size: 110,
-        minSize: 100,
+        size: 105,
+        minSize: 90,
         enableSorting: false,
         enableResizing: false,
         cell: (info) => {
@@ -322,7 +358,7 @@ const TaskList: React.FC<Props> = ({
         },
       },
     ],
-    [taskTagsMap, onToggleStatus, onEditTask, onDeleteTask]
+    [computedTitleSize, taskTagsMap, onToggleStatus, onEditTask, onDeleteTask]
   );
 
   // Глобальный фильтр: поиск по всем полям задачи + поиск по id с # и без него
@@ -404,7 +440,7 @@ const TaskList: React.FC<Props> = ({
           <Search size={16} className="task-list-search-icon" />
           <input
             type="text"
-            placeholder="Поиск по всем полям, #id..."
+            placeholder="Поиск по всем полям..."
             value={globalFilter ?? ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
           />
@@ -421,7 +457,7 @@ const TaskList: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="task-list-table-wrapper">
+      <div className="task-list-table-wrapper" ref={tableWrapperRef}>
         <table
           className="task-list-table"
           style={{
