@@ -263,6 +263,10 @@ const TaskList: React.FC<Props> = ({
         enableResizing: true,
         sortUndefined: 'last',
         sortingFn: 'alphanumeric',
+        meta: {
+          className: 'task-date-td',
+          thClassName: 'task-th-date',
+        },
         cell: (info) => {
           const dueDate = info.getValue() as string | undefined;
           const { overdue, overdueClosed, earlyClosed, isCompleted } = info.row.original;
@@ -360,6 +364,10 @@ const TaskList: React.FC<Props> = ({
         minSize: 115,
         enableResizing: true,
         sortingFn: 'basic',
+        meta: {
+          className: 'task-status-td',
+          thClassName: 'task-th-status',
+        },
         cell: (info) => {
           const task = info.row.original;
           const isCompleted = task.isCompleted;
