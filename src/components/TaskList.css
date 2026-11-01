@@ -168,12 +168,20 @@
   background: var(--bg-scrollbar-thumb-hover, rgba(0, 0, 0, 0.35));
 }
 
-/* Сама таблица: фиксированный layout с точной суммарной шириной колонок */
+/* Сама таблица: фиксированный layout с заполнением 100% ширины контейнера */
 .task-list-table {
   table-layout: fixed;
+  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   margin: 0;
   text-align: left;
+}
+
+/* Четкие вертикальные разделители между всеми столбцами */
+.task-list-table th:not(:last-child),
+.task-list-table td:not(:last-child) {
+  border-right: 1px solid var(--task-list-border);
 }
 
 /* Прилипающий заголовок */
@@ -382,9 +390,19 @@
 }
 
 /* Колонка ссылки */
+.task-th-link .th-content {
+  justify-content: center;
+}
+
+.task-link-td {
+  text-align: center;
+}
+
 .task-link-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .task-link-cell a {

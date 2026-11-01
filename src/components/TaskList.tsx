@@ -29,10 +29,6 @@ type TaskRowData = Task & {
   earlyClosed: number;
 };
 
-// Суммарная минимальная ширина всех колонок кроме "Название"
-// created_at(115) + due_date(135) + link(60) + task_status(125) + closed_dttm(135) + actions(105) = 675px
-const NON_TITLE_COLUMNS_TOTAL = 675;
-
 const TaskList: React.FC<Props> = ({
   tasks,
   taskTagsMap,
@@ -71,11 +67,16 @@ const TaskList: React.FC<Props> = ({
     { id: 'due_date', desc: false },
   ]);
 
-  // Восстановление сохраненных размеров колонок из localStorage
+  // Восстановление сохраненных размеров колонок из localStorage (кроме эластичного столбца "title")
   const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
     try {
-      const saved = localStorage.getItem('taskList_columnSizing_v2');
-      return saved ? JSON.parse(saved) : {};
+      const saved = localStorage.getItem('taskList_columnSizing_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        delete parsed.title;
+        return parsed;
+      }
+      return {};
     } catch {
       return {};
     }
@@ -85,8 +86,11 @@ const TaskList: React.FC<Props> = ({
     (updater: any) => {
       setColumnSizing((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater;
+        if (next && next.title) {
+          delete next.title;
+        }
         try {
-          localStorage.setItem('taskList_columnSizing_v2', JSON.stringify(next));
+          localStorage.setItem('taskList_columnSizing_v3', JSON.stringify(next));
         } catch (e) {
           console.error('Failed to save column sizing', e);
         }
@@ -95,14 +99,6 @@ const TaskList: React.FC<Props> = ({
     },
     []
   );
-
-  // Расчет ширины колонки "Название": занимает все оставшееся место контейнера, если не была изменена вручную
-  const computedTitleSize = useMemo(() => {
-    if (columnSizing['title']) {
-      return columnSizing['title'];
-    }
-    return Math.max(200, wrapperWidth - NON_TITLE_COLUMNS_TOTAL);
-  }, [columnSizing, wrapperWidth]);
 
   const data = useMemo<TaskRowData[]>(() => {
     const now = new Date();
@@ -141,8 +137,10 @@ const TaskList: React.FC<Props> = ({
       {
         accessorKey: 'title',
         header: 'Название',
-        size: computedTitleSize,
+        size: 250,
         minSize: 180,
+        enableResizing: false,
+        sortingFn: 'alphanumeric',
         meta: {
           className: 'task-title-td',
         },
@@ -157,12 +155,15 @@ const TaskList: React.FC<Props> = ({
         },
       },
       {
-        accessorKey: 'created_at',
+        id: 'created_at',
+        accessorFn: (row) => row.created_at ?? undefined,
         header: 'Дата создания',
         size: 115,
         minSize: 95,
+        sortUndefined: 'last',
+        sortingFn: 'alphanumeric',
         cell: (info) => {
-          const createdAt = info.getValue() as string | null;
+          const createdAt = info.getValue() as string | undefined;
           const formatted = createdAt ? new Date(createdAt).toLocaleDateString('ru-RU') : '—';
           return (
             <div className="task-created-cell" title={createdAt || 'Нет даты'}>
@@ -172,12 +173,15 @@ const TaskList: React.FC<Props> = ({
         },
       },
       {
-        accessorKey: 'due_date',
+        id: 'due_date',
+        accessorFn: (row) => row.due_date ?? undefined,
         header: 'Планируемая дата',
         size: 135,
-        minSize: 110,
+        minSize: 105,
+        sortUndefined: 'last',
+        sortingFn: 'alphanumeric',
         cell: (info) => {
-          const dueDate = info.getValue() as string | null;
+          const dueDate = info.getValue() as string | undefined;
           const { overdue, overdueClosed, earlyClosed, isCompleted } = info.row.original;
           const formatted = dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString('ru-RU') : '—';
 
@@ -237,6 +241,10 @@ const TaskList: React.FC<Props> = ({
         minSize: 50,
         enableSorting: false,
         enableResizing: false,
+        meta: {
+          className: 'task-link-td',
+          thClassName: 'task-th-link',
+        },
         cell: (info) => {
           const link = info.row.original.link_to_taskmanager;
           if (!link) return null;
@@ -267,6 +275,7 @@ const TaskList: React.FC<Props> = ({
         header: 'Статус',
         size: 125,
         minSize: 100,
+        sortingFn: 'basic',
         cell: (info) => {
           const task = info.row.original;
           const isCompleted = task.isCompleted;
@@ -293,12 +302,15 @@ const TaskList: React.FC<Props> = ({
         },
       },
       {
-        accessorKey: 'closed_dttm',
+        id: 'closed_dttm',
+        accessorFn: (row) => row.closed_dttm ?? undefined,
         header: 'Дата завершения',
         size: 135,
-        minSize: 110,
+        minSize: 105,
+        sortUndefined: 'last',
+        sortingFn: 'alphanumeric',
         cell: (info) => {
-          const closedDttm = info.getValue() as string | null;
+          const closedDttm = info.getValue() as string | undefined;
           const formatted = closedDttm ? new Date(closedDttm).toLocaleDateString('ru-RU') : '—';
           return (
             <div className="task-closed-cell" title={closedDttm || 'Нет даты завершения'}>
@@ -358,7 +370,7 @@ const TaskList: React.FC<Props> = ({
         },
       },
     ],
-    [computedTitleSize, taskTagsMap, onToggleStatus, onEditTask, onDeleteTask]
+    [taskTagsMap, onToggleStatus, onEditTask, onDeleteTask]
   );
 
   // Глобальный фильтр: поиск по всем полям задачи + поиск по id с # и без него
@@ -461,12 +473,18 @@ const TaskList: React.FC<Props> = ({
         <table
           className="task-list-table"
           style={{
-            width: `${table.getTotalSize()}px`,
+            width: table.getTotalSize() > wrapperWidth ? `${table.getTotalSize()}px` : '100%',
+            minWidth: '100%',
           }}
         >
           <colgroup>
             {table.getVisibleLeafColumns().map((column) => (
-              <col key={column.id} style={{ width: `${column.getSize()}px` }} />
+              <col
+                key={column.id}
+                style={{
+                  width: column.id === 'title' ? 'auto' : `${column.getSize()}px`,
+                }}
+              />
             ))}
           </colgroup>
           <thead>
@@ -476,13 +494,14 @@ const TaskList: React.FC<Props> = ({
                   const canSort = header.column.getCanSort();
                   const canResize = header.column.getCanResize();
                   const isSorted = header.column.getIsSorted();
+                  const meta = header.column.columnDef.meta as { thClassName?: string } | undefined;
 
                   return (
                     <th
                       key={header.id}
                       colSpan={header.colSpan}
-                      style={{ width: `${header.getSize()}px` }}
-                      className={`task-th ${canSort ? 'sortable' : ''}`}
+                      style={{ width: header.column.id === 'title' ? undefined : `${header.getSize()}px` }}
+                      className={`task-th ${canSort ? 'sortable' : ''} ${meta?.thClassName || ''}`}
                     >
                       <div
                         className="th-content"
@@ -540,7 +559,7 @@ const TaskList: React.FC<Props> = ({
                       <td
                         key={cell.id}
                         className={meta?.className || ''}
-                        style={{ width: `${cell.column.getSize()}px` }}
+                        style={{ width: cell.column.id === 'title' ? undefined : `${cell.column.getSize()}px` }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
